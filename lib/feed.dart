@@ -37,7 +37,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fluttergra',
+        title: const Text('Fluttergram',
             style: const TextStyle(
                 fontFamily: "Billabong", color: Colors.black, fontSize: 35.0)),
         centerTitle: true,
