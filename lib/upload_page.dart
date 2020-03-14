@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
@@ -10,20 +9,21 @@ import 'location.dart';
 import 'package:geocoder/geocoder.dart';
 
 class Uploader extends StatefulWidget {
-  _Uploader createState() => _Uploader();
+  final File imageFile;
+  Uploader({this.imageFile});
+  _Uploader createState() => _Uploader(file: this.imageFile);
 }
 
 class _Uploader extends State<Uploader> {
   File file;
   //Strings required to save address
   Address address;
-
   Map<String, double> currentLocation = Map();
   TextEditingController descriptionController = TextEditingController();
   TextEditingController locationController = TextEditingController();
 
   bool uploading = false;
-
+  _Uploader({this.file});
   @override
   initState() {
     //variables with location assigned as 0.0
@@ -36,17 +36,15 @@ class _Uploader extends State<Uploader> {
   //method to get Location and save into variables
   initPlatformState() async {
     Address first = await getUserLocation();
+
     setState(() {
       address = first;
     });
   }
 
   Widget build(BuildContext context) {
-    return file == null
-        ? IconButton(
-            icon: Icon(Icons.file_upload),
-            onPressed: () => {_selectImage(context)})
-        : Scaffold(
+
+          return  Scaffold(
             resizeToAvoidBottomPadding: false,
             appBar: AppBar(
               backgroundColor: Colors.white70,
@@ -130,50 +128,9 @@ class _Uploader extends State<Uploader> {
     }
   }
 
-  _selectImage(BuildContext parentContext) async {
-    return showDialog<Null>(
-      context: parentContext,
-      barrierDismissible: false, // user must tap button!
-
-      builder: (BuildContext context) {
-        return SimpleDialog(
-          title: const Text('Create a Post'),
-          children: <Widget>[
-            SimpleDialogOption(
-                child: const Text('Take a photo'),
-                onPressed: () async {
-                  Navigator.pop(context);
-                  File imageFile =
-                      await ImagePicker.pickImage(source: ImageSource.camera, maxWidth: 1920, maxHeight: 1200, imageQuality: 80);
-                  setState(() {
-                    file = imageFile;
-                  });
-                }),
-            SimpleDialogOption(
-                child: const Text('Choose from Gallery'),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  File imageFile =
-                      await ImagePicker.pickImage(source: ImageSource.gallery, maxWidth: 1920, maxHeight: 1200, imageQuality: 80);
-                  setState(() {
-                    file = imageFile;
-                  });
-                }),
-            SimpleDialogOption(
-              child: const Text("Cancel"),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            )
-          ],
-        );
-      },
-    );
-  }
-
   void clearImage() {
     setState(() {
-      file = null;
+      Navigator.pop(context);
     });
   }
 
@@ -188,7 +145,8 @@ class _Uploader extends State<Uploader> {
           location: locationController.text);
     }).then((_) {
       setState(() {
-        file = null;
+       // file = null;
+       Navigator.pop(context);
         uploading = false;
       });
     });

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'feed.dart';
 import 'upload_page.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,24 +14,23 @@ import 'create_account.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io' show Platform;
 import 'models/user.dart';
+import 'package:image_picker/image_picker.dart';
 
 final auth = FirebaseAuth.instance;
 final googleSignIn = GoogleSignIn();
 final ref = Firestore.instance.collection('insta_users');
 final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
 
-
 User currentUserModel;
 
 Future<void> main() async {
-
-  WidgetsFlutterBinding.ensureInitialized(); // after upgrading flutter this is now necessary
+  WidgetsFlutterBinding
+      .ensureInitialized(); // after upgrading flutter this is now necessary
 
   // enable timestamps in firebase
   Firestore.instance.settings().then((_) {
-    print('[Main] Firestore timestamps in snapshots set');},
-    onError: (_) => print('[Main] Error setting timestamps in snapshots')
-  );
+    print('[Main] Firestore timestamps in snapshots set');
+  }, onError: (_) => print('[Main] Error setting timestamps in snapshots'));
   runApp(Fluttergram());
 }
 
@@ -45,11 +45,9 @@ Future<Null> _ensureLoggedIn(BuildContext context) async {
   }
 
   if (await auth.currentUser() == null) {
-
     final GoogleSignInAccount googleUser = await googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth = await googleUser
-        .authentication;
-
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
     final AuthCredential credential = GoogleAuthProvider.getCredential(
       accessToken: googleAuth.accessToken,
@@ -70,9 +68,8 @@ Future<Null> _silentLogin(BuildContext context) async {
 
   if (await auth.currentUser() == null && user != null) {
     final GoogleSignInAccount googleUser = await googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth = await googleUser
-        .authentication;
-
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
     final AuthCredential credential = GoogleAuthProvider.getCredential(
       accessToken: googleAuth.accessToken,
@@ -81,8 +78,6 @@ Future<Null> _silentLogin(BuildContext context) async {
 
     await auth.signInWithCredential(credential);
   }
-
-
 }
 
 Future<Null> _setUpNotifications() async {
@@ -195,10 +190,13 @@ class HomePage extends StatefulWidget {
 PageController pageController;
 
 class _HomePageState extends State<HomePage> {
-  int _page = 0;
+ final int feedPage = 0;
+ final int searchPage = 1;
+ final int favoritePage = 2;
+ final int profilePage = 3; 
   bool triedSilentLogin = false;
   bool setupNotifications = false;
-
+  File imageFile;
   Scaffold buildLoginPage() {
     return Scaffold(
       body: Center(
@@ -248,12 +246,7 @@ class _HomePageState extends State<HomePage> {
                   child: Feed(),
                 ),
                 Container(color: Colors.white, child: SearchPage()),
-                Container(
-                  color: Colors.white,
-                  child: Uploader(),
-                ),
-                Container(
-                    color: Colors.white, child: ActivityFeedPage()),
+                Container(color: Colors.white, child: ActivityFeedPage()),
                 Container(
                     color: Colors.white,
                     child: ProfilePage(
@@ -262,39 +255,86 @@ class _HomePageState extends State<HomePage> {
               ],
               controller: pageController,
               physics: NeverScrollableScrollPhysics(),
-              onPageChanged: onPageChanged,
             ),
-            bottomNavigationBar: CupertinoTabBar(
-              backgroundColor: Colors.white,
-              items: <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.home,
-                        color: (_page == 0) ? Colors.black : Colors.grey),
-                    title: Container(height: 0.0),
-                    backgroundColor: Colors.white),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.search,
-                        color: (_page == 1) ? Colors.black : Colors.grey),
-                    title: Container(height: 0.0),
-                    backgroundColor: Colors.white),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.add_circle,
-                        color: (_page == 2) ? Colors.black : Colors.grey),
-                    title: Container(height: 0.0),
-                    backgroundColor: Colors.white),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.star,
-                        color: (_page == 3) ? Colors.black : Colors.grey),
-                    title: Container(height: 0.0),
-                    backgroundColor: Colors.white),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.person,
-                        color: (_page == 4) ? Colors.black : Colors.grey),
-                    title: Container(height: 0.0),
-                    backgroundColor: Colors.white),
-              ],
-              onTap: navigationTapped,
-              currentIndex: _page,
+            floatingActionButton: Container(
+                height: 65.0,
+                width: 70.0,
+                child: FloatingActionButton(
+                  onPressed: () async {
+                    var image = await ImagePicker.pickImage(
+                        source: ImageSource.camera,
+                        maxWidth: 1920,
+                        maxHeight: 1200,
+                        imageQuality: 80);
+
+                    setState(() {
+                      imageFile = image;
+                      imageFile == null
+                          ? pageController.jumpToPage(feedPage) //jump to feed page in case no image captured
+                          : Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => Uploader(
+                                        imageFile: imageFile,
+                                      )));
+                    });
+                  },
+                  child: Icon(Icons.add),
+                )),
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.centerDocked,
+            bottomNavigationBar: BottomAppBar(
+              shape: CircularNotchedRectangle(),
+              color: Colors.white,
+              child: Container(
+                height: 30,
+                child: Row(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    IconButton(
+                      iconSize: 30.0,
+                      padding: EdgeInsets.only(left: 28.0),
+                      icon: Icon(Icons.home),
+                      onPressed: () {
+                        setState(() {
+                          pageController.jumpToPage(feedPage);
+                        });
+                      },
+                    ),
+                    IconButton(
+                      iconSize: 30.0,
+                      padding: EdgeInsets.only(right: 28.0),
+                      icon: Icon(Icons.search),
+                      onPressed: () {
+                        setState(() {
+                          pageController.jumpToPage(searchPage);
+                        });
+                      },
+                    ),
+                    IconButton(
+                      iconSize: 30.0,
+                      padding: EdgeInsets.only(left: 28.0),
+                      icon: Icon(Icons.star),
+                      onPressed: () {
+                        setState(() {
+                          pageController.jumpToPage(favoritePage);
+                        });
+                      },
+                    ),
+                    IconButton(
+                      iconSize: 30.0,
+                      padding: EdgeInsets.only(right: 28.0),
+                      icon: Icon(Icons.person),
+                      onPressed: () {
+                        setState(() {
+                          pageController.jumpToPage(profilePage);
+                        });
+                      },
+                    )
+                  ],
+                ),
+              ),
             ),
           );
   }
@@ -317,17 +357,6 @@ class _HomePageState extends State<HomePage> {
     await _silentLogin(context);
     setState(() {
       triedSilentLogin = true;
-    });
-  }
-
-  void navigationTapped(int page) {
-    //Animating Page
-    pageController.jumpToPage(page);
-  }
-
-  void onPageChanged(int page) {
-    setState(() {
-      this._page = page;
     });
   }
 
