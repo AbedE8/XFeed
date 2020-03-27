@@ -250,7 +250,7 @@ class _ProfilePage extends State<ProfilePage>
         var snap = await Firestore.instance
             .collection('insta_posts')
             .where('ownerId', isEqualTo: profileId)
-            .orderBy("timestamp")
+            .orderBy("timestamp",descending: true)
             .getDocuments();
         for (var doc in snap.documents) {
           posts.add(ImagePost.fromDocument(doc));
@@ -411,7 +411,7 @@ class _ProfilePage extends State<ProfilePage>
 }
 
 class ImageTile extends StatelessWidget {
-  final ImagePost imagePost;
+  final ImagePost  imagePost;
 
   ImageTile(this.imagePost);
 

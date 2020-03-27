@@ -16,7 +16,8 @@ class ImagePost extends StatefulWidget {
       this.description,
       this.likes,
       this.postId,
-      this.ownerId});
+      this.ownerId,
+      this.activity});
 
   factory ImagePost.fromDocument(DocumentSnapshot document) {
     return ImagePost(
@@ -27,6 +28,7 @@ class ImagePost extends StatefulWidget {
       description: document['description'],
       postId: document.documentID,
       ownerId: document['ownerId'],
+      activity: document['activity'],
     );
   }
 
@@ -39,6 +41,7 @@ class ImagePost extends StatefulWidget {
       description: data['description'],
       ownerId: data['ownerId'],
       postId: data['postId'],
+      activity: data['activity'],
     );
   }
 
@@ -65,7 +68,7 @@ class ImagePost extends StatefulWidget {
   final likes;
   final String postId;
   final String ownerId;
-
+  final String activity;
   _ImagePost createState() => _ImagePost(
         mediaUrl: this.mediaUrl,
         username: this.username,
@@ -75,6 +78,7 @@ class ImagePost extends StatefulWidget {
         likeCount: getLikeCount(this.likes),
         ownerId: this.ownerId,
         postId: this.postId,
+        activity: this.activity,
       );
 }
 
@@ -83,6 +87,7 @@ class _ImagePost extends State<ImagePost> {
   final String username;
   final String location;
   final String description;
+  final String activity;
   Map likes;
   int likeCount;
   final String postId;
@@ -106,7 +111,8 @@ class _ImagePost extends State<ImagePost> {
       this.likes,
       this.postId,
       this.likeCount,
-      this.ownerId});
+      this.ownerId,
+      this.activity});
 
   GestureDetector buildLikeIcon() {
     Color color;
@@ -185,7 +191,8 @@ class _ImagePost extends State<ImagePost> {
                 },
               ),
               subtitle: Text(this.location),
-              trailing: const Icon(Icons.more_vert),
+              //trailing: const Icon(Icons.more_vert),
+              trailing: Text(this.activity == null ? "NA":this.activity),
             );
           }
 

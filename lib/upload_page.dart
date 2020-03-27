@@ -1,8 +1,11 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 import 'dart:async';
+import 'categories.dart';
+import 'filter_page.dart';
 import 'main.dart';
 import 'dart:io';
 import 'location.dart';
@@ -14,6 +17,8 @@ class Uploader extends StatefulWidget {
   _Uploader createState() => _Uploader(file: this.imageFile);
 }
 
+
+
 class _Uploader extends State<Uploader> {
   File file;
   //Strings required to save address
@@ -21,8 +26,21 @@ class _Uploader extends State<Uploader> {
   Map<String, double> currentLocation = Map();
   TextEditingController descriptionController = TextEditingController();
   TextEditingController locationController = TextEditingController();
-
   bool uploading = false;
+  bool locationTapped = false;
+   
+  static CategoryController controller = new CategoryController(2);
+  final numberOfCategories = controller.getNumNotifier();
+  static List<FeedCategory> categories = <FeedCategory>[
+    FeedCategory("Food", Icon(Icons.fastfood),controller),
+    FeedCategory("Sport", Icon(Icons.fitness_center),controller),
+    FeedCategory("Party", Icon(Icons.audiotrack),controller),
+    FeedCategory("Education", Icon(Icons.school),controller),
+    // FeedCategory("ALL", Icon(Icons.all_inclusive),controller),
+  ];
+  
+  
+
   _Uploader({this.file});
   @override
   initState() {
@@ -42,9 +60,32 @@ class _Uploader extends State<Uploader> {
     });
   }
 
-  Widget build(BuildContext context) {
 
-          return  Scaffold(
+/*  void showDialog(String stringToShow) {
+    showCupertinoDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return CupertinoAlertDialog(
+            title: Text("Field required"),
+            content: Text(stringToShow),
+            actions: <Widget>[
+              CupertinoDialogAction(
+                child: Text("ok"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              )
+            ],
+          );
+        });
+  }
+*/
+bool canPost(){
+  return (locationTapped && (numberOfCategories.value > 0));
+}
+  Widget build(BuildContext context) {
+    
+        return Scaffold(
             resizeToAvoidBottomPadding: false,
             appBar: AppBar(
               backgroundColor: Colors.white70,
@@ -55,46 +96,54 @@ class _Uploader extends State<Uploader> {
                 'Post to',
                 style: const TextStyle(color: Colors.black),
               ),
-              actions: <Widget>[
-                FlatButton(
-                    onPressed: postImage,
-                    child: Text(
-                      "Post",
-                      style: TextStyle(
-                          color: Colors.blueAccent,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20.0),
-                    ))
-              ],
+              actions: <Widget>[ValueListenableBuilder<int>(
+                valueListenable: numberOfCategories,
+                 builder: (BuildContext context, int value, Widget child) {
+                  return FlatButton(
+                    onPressed: locationTapped && (numberOfCategories.value > 0) ? postImage:null ,
+                child: Text(
+                  "Post",
+                  style: TextStyle(
+                      color: locationTapped && (numberOfCategories.value > 0 )? Colors.blueAccent :Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20.0),
+                ));
+                } ,
+              )
+                
+          ],
+        ),
+        body: ListView(
+          children: <Widget>[
+            PostForm(
+              imageFile: file,
+              descriptionController: descriptionController,
+              locationController: locationController,
+              loading: uploading,
             ),
-            body: ListView(
-              children: <Widget>[
-                PostForm(
-                  imageFile: file,
-                  descriptionController: descriptionController,
-                  locationController: locationController,
-                  loading: uploading,
-                ),
-                Divider(), //scroll view where we will show location to users
-                (address == null)
-                    ? Container()
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.only(right: 5.0, left: 5.0),
-                        child: Row(
-                          children: <Widget>[
-                            buildLocationButton(address.featureName),
-                            buildLocationButton(address.subLocality),
-                            buildLocationButton(address.locality),
-                            buildLocationButton(address.subAdminArea),
-                            buildLocationButton(address.adminArea),
-                            buildLocationButton(address.countryName),
-                          ],
-                        ),
-                      ),
-                (address == null) ? Container() : Divider(),
-              ],
-            ));
+            Divider(), //scroll view where we will show location to users
+            (address == null)
+                ? Container()
+                : SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.only(right: 5.0, left: 5.0),
+                    child: Row(
+                      children: <Widget>[
+                        buildLocationButton(address.featureName),
+                        buildLocationButton(address.subLocality),
+                        buildLocationButton(address.locality),
+                        buildLocationButton(address.subAdminArea),
+                        buildLocationButton(address.adminArea),
+                        buildLocationButton(address.countryName),
+                      ],
+                    ),
+                  ),
+            (address == null) ? Container() : Divider(),
+            Padding(padding: EdgeInsets.all(10),child: Text("Category:",style: TextStyle(fontSize: 18,color: Colors.grey))),
+            Wrap(children:categories),
+
+          ],
+        ));
   }
 
   //method to build buttons with location.
@@ -103,6 +152,7 @@ class _Uploader extends State<Uploader> {
       return InkWell(
         onTap: () {
           locationController.text = locationName;
+          locationTapped = true;
         },
         child: Center(
           child: Container(
@@ -142,11 +192,12 @@ class _Uploader extends State<Uploader> {
       postToFireStore(
           mediaUrl: data,
           description: descriptionController.text,
-          location: locationController.text);
+          location: locationController.text,
+          activity: controller.getCategorisName().first);
     }).then((_) {
       setState(() {
-       // file = null;
-       Navigator.pop(context);
+        // file = null;
+        Navigator.pop(context);
         uploading = false;
       });
     });
@@ -214,7 +265,7 @@ class PostForm extends StatelessWidget {
                   border: InputBorder.none),
             ),
           ),
-        )
+        ),
       ],
     );
   }
@@ -230,7 +281,10 @@ Future<String> uploadImage(var imageFile) async {
 }
 
 void postToFireStore(
-    {String mediaUrl, String location, String description}) async {
+    {String mediaUrl,
+    String location,
+    String description,
+    String activity}) async {
   var reference = Firestore.instance.collection('insta_posts');
 
   reference.add({
@@ -241,6 +295,7 @@ void postToFireStore(
     "description": description,
     "ownerId": googleSignIn.currentUser.id,
     "timestamp": DateTime.now(),
+    "activity": activity
   }).then((DocumentReference doc) {
     String docId = doc.documentID;
     reference.document(docId).updateData({"postId": docId});

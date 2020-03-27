@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'filter_page.dart';
 import 'image_post.dart';
 import 'dart:async';
 import 'main.dart';
@@ -12,7 +13,7 @@ class Feed extends StatefulWidget {
 
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
-
+  FilterItems filterData = null;
   @override
   void initState() {
     super.initState();
@@ -37,11 +38,36 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Fluttergram',
+        title: const Text('Xfeed',
             style: const TextStyle(
                 fontFamily: "Billabong", color: Colors.black, fontSize: 35.0)),
         centerTitle: true,
         backgroundColor: Colors.white,
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: const Icon(
+                Icons.filter,
+              ),
+              onPressed: () async {
+                filterData = await Navigator.push(context,
+                        MaterialPageRoute(builder: (context) => Filter()))
+                    as FilterItems;
+                // var filter = Filter();
+                //return Container(child: Filter(),);
+                // filterData.printSelectedCategories();
+                if (filterData != null) {
+                  setState(() {
+                    feedData = null;
+                  });
+                  _getFeed();
+                }
+
+                // print("back from filter "+filterData.category.name);
+              },
+            );
+          },
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
@@ -74,15 +100,26 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     }
   }
 
-
   _getFeed() async {
     print("Staring getFeed");
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     String userId = googleSignIn.currentUser.id.toString();
-    var url =
-        'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' + userId;
+
+    var url;
+    if (filterData != null) {
+      print("here request is "+filterData.categories.toString() );
+      url =
+          'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?category=' +
+              filterData.categories.toString() +
+              '&uid=' +
+              userId;
+    } else {
+      url = 'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' +
+          userId;
+    }
+
     var httpClient = HttpClient();
 
     List<ImagePost> listOfPosts;
