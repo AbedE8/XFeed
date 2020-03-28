@@ -145,6 +145,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
 
     setState(() {
       feedData = listOfPosts;
+      filterData = null;
     });
   }
 

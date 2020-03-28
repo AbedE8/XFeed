@@ -35,7 +35,7 @@ async function getAllPosts(following, uid, categories, res) {
 function getUserPosts(userId, categories, res){
     let posts;
 
-    if(categories !== null) {
+    if(categories) {
       const tmp = categories.slice(1,categories.length-1);
       const all_categories = tmp.split(', ');
       posts = admin.firestore().collection("insta_posts").where("ownerId", "==", userId)

@@ -13,3 +13,7 @@ export const notificationHandler = functions.firestore.document("/insta_a_feed/{
 export const getFeed = functions.https.onRequest((req, res) => {
   getFeedModule(req, res);
 })
+
+export const testAbed = functions.https.onRequest((req, res) => {
+  res.send('works');
+})
