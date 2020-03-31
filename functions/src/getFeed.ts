@@ -25,7 +25,7 @@ uid -         user id from the DB
 categories -  list of strings of the required categories (food, nightLife, activities, culture, outdoors, shopping, info)
 location -    (geopoint)contain the latitude and longitude of the location the user want to get post by.
 radius -      the distance from the location to get posts.
-gender -      "male, female, all" need to be one of thus values.
+gender -      "male, female" - the gender of the publisher of post that user want to see..
 */
 async function getAllPosts(uid, categories, location, radius, gender, res) {
     let postByLocation = [];
@@ -33,6 +33,7 @@ async function getAllPosts(uid, categories, location, radius, gender, res) {
     let postByGender = [];
     let allPostsFromDB;
 
+    //TODO: do it more mempry wiesly.
     allPostsFromDB = await admin.firestore().collection("posts");
     postByLocation = await getPostByLocation(allPostsFromDB, location, radius);
     postByCategory = await getPostByCategory(postByLocation, categories);
@@ -42,16 +43,19 @@ async function getAllPosts(uid, categories, location, radius, gender, res) {
 }
 
 /* return all the post from the wanted gender.*/
-async function getPostByGender(posts_input: any[], gender){
+async function getPostByGender(posts_input:any[], gender){
+  const tmp = gender.slice(1,gender.length-1);
+  const selected_gender = tmp.split(', ');
   const posts = [];
 
-  if (gender == 'all') {
+  console.log(selected_gender.length);
+  if (selected_gender.length == 2) {
       return posts_input;
   }
 
   for(let i = 0; i < posts_input.length; i++){
     let snap = await posts_input[i].publisher.get();
-    if (gender == snap.data().gender){
+    if (selected_gender[0] == snap.data().gender){
       posts.push(posts_input[i]);
     }
   }
