@@ -22,6 +22,8 @@
     // code currently being edited (they may be incorrectly handling a different type case that does not exist).
     "no-unnecessary-type-assertion": true,
 
+    "no-implicit-dependencies": false,
+
     // Disallow nonsensical label usage.
     "label-position": true,
 
