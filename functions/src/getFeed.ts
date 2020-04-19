@@ -1,13 +1,13 @@
-import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as geolib from 'geolib';
 import { GeoPoint, CollectionReference } from '@google-cloud/firestore';
+import { googleMapsClient } from "./clientsAPI"
 
 
 export const getFeedModule = function(req, res) {
     const uid = String(req.query.uid);
     const categories = req.query.category;
-    let location = new GeoPoint(Number(req.query.latitude), Number(req.query.longitude));
+    let location = new GeoPoint(Number(req.query.center[0]), Number(req.query.center[1]));
     let distance = req.query.distance;
     let gender = req.query.gender;
 
@@ -33,7 +33,6 @@ async function getAllPosts(uid, categories, location, radius, gender, res) {
     let postByGender = [];
     let allPostsFromDB;
 
-    //TODO: do it more mempry wiesly.
     allPostsFromDB = await admin.firestore().collection("posts");
     postByLocation = await getPostByLocation(allPostsFromDB, location, radius);
     postByCategory = await getPostByCategory(postByLocation, categories);
@@ -63,7 +62,7 @@ async function getPostByGender(posts_input:any[], gender){
   return posts;
 }
 
-/* return all the post with location insude the area of the location and radius.*/
+/* return all the post with location insude the area of the location and radius (by meter).*/
 function getPostByLocation(posts_input: CollectionReference, location, radius){
   return posts_input.get()
   .then(function(querySnapshot) {
@@ -95,62 +94,4 @@ function getPostByCategory(posts_input: any[], categories){
   })
 
   return posts
-}
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-function getUserPosts(userId, categories, res){
-    let posts;
-
-    if(categories) {
-      const tmp = categories.slice(1,categories.length-1);
-      const all_categories = tmp.split(', ');
-      posts = admin.firestore().collection("insta_posts").where("ownerId", "==", userId)
-      .where("activity",'in',all_categories)
-      .orderBy("timestamp","desc");
-  
-    }
-    else{
-      posts = admin.firestore().collection("insta_posts").where("ownerId", "==", userId).orderBy("timestamp","desc")    
-    }
-    
-    return posts.get()
-    .then(function(querySnapshot) {
-        const listOfPosts = [];
-  
-        querySnapshot.forEach(function(doc) {
-            listOfPosts.push(doc.data());
-        });
-  
-        return listOfPosts;
-    })
-  }
-  
-function getFollowing(uid, res){
-    const doc = admin.firestore().doc(`insta_users/${uid}`)
-    return doc.get().then(snapshot => {
-      const followings = snapshot.data().following;
-      
-      const following_list = [];
-  
-      for (const following in followings) {
-        if (followings[following] === true){
-          following_list.push(following);
-        }
-      }
-      return following_list; 
-  }).catch(error => {
-      res.status(500).send(error)
-    })
 }

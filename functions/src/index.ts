@@ -2,6 +2,7 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { notificationHandlerModule } from "./notificationHandler"
 import { getFeedModule } from "./getFeed"
+import { uploadPostModule } from "./uploadPost"
 var serviceAccount = require('../xfeed-497fe-firebase-adminsdk-wjgq3-df2a207afc.json');
 
 admin.initializeApp({
@@ -16,5 +17,9 @@ admin.initializeApp({
 
 export const getFeed = functions.https.onRequest((req, res) => {
   getFeedModule(req, res);
+})
+
+export const uploadPost = functions.https.onRequest((req, res) => {
+  uploadPostModule(req, res);
 })
 
