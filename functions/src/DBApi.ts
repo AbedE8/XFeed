@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin';
 
 export const DBController = {
-	insertDocumentToCollection: insertDocumentToCollection
+	insertDocumentToCollection: insertDocumentToCollection,
+	getDocByUid: getDocByUid
 }
 
 async function insertDocumentToCollection(collectionName, documentToAdd, msg){
@@ -13,4 +14,8 @@ async function insertDocumentToCollection(collectionName, documentToAdd, msg){
 		console.log(err);
 		return null;
 	});
+}
+
+async function getDocByUid(uid, collectionName) {
+	return await admin.firestore().collection(collectionName).doc(uid).get();
 }
