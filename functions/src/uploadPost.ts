@@ -58,7 +58,8 @@ export const uploadPostModule = function(req, res) {
 				comments: [],
 				likes: [],
 				referred_users: [],
-				distribution_left: userRef.data().post_distribution,
+				distribution: userRef.data().post_distribution,
+				views: 0,
 				feature_name: i_feature_name
 			};
 	

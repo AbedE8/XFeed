@@ -27,7 +27,7 @@
     "geolib": "^3.2.1",
     "geolocator": "^2.1.5",
     "lodash": "^4.17.15",
-    "moment": "^2.24.0"
+    "moment": "^2.25.3"
   },
   "devDependencies": {
     "tslint": "^5.12.0",
