@@ -62,7 +62,13 @@ export const uploadPostModule = function(req, res) {
 				feature_name: i_feature_name
 			};
 	
-			return await DBController.insertDocumentToCollection('posts', newPost, "new post published.");
+			return await DBController.insertDocumentToCollection('posts', newPost, "new post published.").then( newPostRef => {
+				console.log(newPostRef.id);
+				newPostRef.update({
+					id: newPostRef.id
+				})
+				return newPostRef;
+			});
 		});	
 	}
 
