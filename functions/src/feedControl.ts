@@ -16,9 +16,9 @@ export const getLocationFeedModule = function(req, res) {
 
   async function getLocationFeed() {
     await getLocationFeedExec(reqFeatureName).then(listOfPosts => {
-      listOfPosts.unshift(NUM_OF_POST_IN_CHUNK);
-      console.log(listOfPosts);
-      res.send(listOfPosts);
+      let result = {'num_of_posts':NUM_OF_POST_IN_CHUNK, 'posts': listOfPosts};
+      console.log(JSON.stringify(result));
+      res.send(JSON.stringify(result));
     }).catch(err => {
       res.status(404).send(err);
       });
@@ -49,6 +49,9 @@ userPostPref - contain all user preferences for posts:
   -maxAge -      posts that there publisher age is not smaller
   -location -    (geopoint)contain the latitude and longitude of the location the user want to get post by.
   -radius -      the distance from the location to get posts by km.
+
+  return - array [{NUM_OF_POST_IN_CHUNK}, {posts_with_data, posts id}]. the array is sorted by published time with consideration
+           on the user post_preferences, posts_with_data size is NUM_OF_POST_IN_CHUNK.
 */
 export const getFeedModule = function(req, res) {
   user_id = String(req.query.uid);
@@ -56,9 +59,9 @@ export const getFeedModule = function(req, res) {
   async function compileFeedPost() {
     await getAllPostsByUserPref(user_id).then(listOfPosts => {
       let feed = [].concat.apply([], listOfPosts); // flattens list.
-      feed.unshift(NUM_OF_POST_IN_CHUNK);
-      console.log(feed);
-      res.status(200).send(feed);
+      let result = {'num_of_posts':NUM_OF_POST_IN_CHUNK, 'posts': feed};
+      console.log(JSON.stringify(result));
+      res.status(200).send(JSON.stringify(result));
     }).catch(err => {
       console.log(err);
       res.status(404).send(err);
@@ -123,13 +126,6 @@ async function isPostMeetsThePreferences(userPostPref, post){
   return await DBController.getDocByUid(post.publisher, "users").then( publisherRef => {
     let publisher = publisherRef.data(); 
     let publisherAge = moment().diff(moment(publisher.birthday, "MM/DD/YYYY"), 'years', false);
-    
-    /*console.log(post);
-    console.log(userPostPref.Categories);
-    console.log(userPostPref.Categories.some(r => post.category.includes(r)));
-    console.log(userPostPref.gender.includes(publisher.gender));
-    console.log(publisherAge <= userPostPref.maxAge);
-    console.log(publisherAge >= userPostPref.minAge);*/
     
     if (userPostPref.Categories.some(r => post.category.includes(r)) &&
         userPostPref.gender.includes(publisher.gender) &&
