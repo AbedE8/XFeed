@@ -16,6 +16,7 @@ export const getLocationFeedModule = function(req, res) {
 
   async function getLocationFeed() {
     await getLocationFeedExec(reqFeatureName).then(listOfPosts => {
+      listOfPosts.unshift(NUM_OF_POST_IN_CHUNK);
       console.log(listOfPosts);
       res.send(listOfPosts);
     }).catch(err => {
@@ -55,6 +56,7 @@ export const getFeedModule = function(req, res) {
   async function compileFeedPost() {
     await getAllPostsByUserPref(user_id).then(listOfPosts => {
       let feed = [].concat.apply([], listOfPosts); // flattens list.
+      feed.unshift(NUM_OF_POST_IN_CHUNK);
       console.log(feed);
       res.status(200).send(feed);
     }).catch(err => {
@@ -69,7 +71,6 @@ export const getFeedModule = function(req, res) {
     //IMPORTENT!!!! user uid == user post preferences uid
     let userPostPref = (await DBController.getDocByUid(uid, "post_preferences")).data();
     let promises = (await getlocationsWithinRadius(userPostPref.location, userPostPref.radius)).map(async location => {
-      //console.log(location.data().name);
       let locationPosts = location.data().posts;
       return getPostFromLocation(locationPosts, userPostPref);
     });
@@ -134,7 +135,8 @@ async function isPostMeetsThePreferences(userPostPref, post){
         userPostPref.gender.includes(publisher.gender) &&
         publisherAge <= userPostPref.maxAge &&
         publisherAge >= userPostPref.minAge &&
-        post.publisher != user_id){
+        post.publisher != user_id &&
+        post.distribution > post.views){
       res = true;
     }
   
