@@ -97,7 +97,7 @@ async function createFeedWithFirstChunkOfPosts(postArr, I_numOfPostsWithData){
       postArr[i] = post.data();
       //increse view on post.
     } else if (postArr[i] != null){
-      postArr[i] = postArr[i].id;
+      postArr[i] = {'post_id':postArr[i].id};
     } else {
       postArr.splice(i,1)
     }
