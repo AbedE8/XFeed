@@ -32,7 +32,7 @@ export const getLocationFeedModule = function(req, res) {
     return await GeoLocationDB.get().then(async function(locationSnapshot){
       if (locationSnapshot.size == 1){
         let locationPosts =  locationSnapshot.docs[0].data().d.posts;
-        return await createFeedWithFirstChunkOfPosts(locationPosts.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK);
+        return await createFeedWithFirstChunkOfPosts(locationPosts.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK, false);
         } else {
         throw new Error("num of locations with name " + featureName + "is " + locationSnapshot.size);
       }
@@ -85,22 +85,24 @@ export const getFeedModule = function(req, res) {
     });
   
     return await Promise.all(promises).then(async postArr => {
-      return await createFeedWithFirstChunkOfPosts(postArr.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK);
+      return await createFeedWithFirstChunkOfPosts(postArr.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK, true);
     }).catch(err => {
       console.log(err);
     });
   }
 }
 
-async function createFeedWithFirstChunkOfPosts(postArr, I_numOfPostsWithData){
+async function createFeedWithFirstChunkOfPosts(postArr, I_numOfPostsWithData, toIncView){
   let numOfPostsWithData = I_numOfPostsWithData
-  
+
   for (let i = 0; i < postArr.length; i++) {
     if (postArr[i] != null && numOfPostsWithData){
       numOfPostsWithData--
       let post = await DBController.getDocByUid(postArr[i].id, "posts");
       postArr[i] = post.data();
-      //increse view on post.
+      if (toIncView){
+        DBController.incrementDocField("posts", post.data().id, "views", 1);
+      }
     } else if (postArr[i] != null){
       postArr[i] = {'post_id':postArr[i].id};
     } else {
