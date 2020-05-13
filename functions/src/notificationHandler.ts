@@ -11,7 +11,7 @@ export const notificationHandlerModule = async function (snapshot, context) {
 
       const androidNotificationToken = ownerData.data()["androidNotificationToken"];
       if (androidNotificationToken) {
-         sendNotification(androidNotificationToken, snapshot.data());
+        sendNotification(androidNotificationToken, snapshot.data());
         
 
       } else {

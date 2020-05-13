@@ -58,8 +58,13 @@ export const getFeedModule = function(req, res) {
 
   async function compileFeedPost() {
     await getAllPostsByUserPref(user_id).then(listOfPosts => {
+      let numOfPostsWithData = NUM_OF_POST_IN_CHUNK;
       let feed = [].concat.apply([], listOfPosts); // flattens list.
-      let result = {'num_of_posts':NUM_OF_POST_IN_CHUNK, 'posts': feed};
+
+      if(listOfPosts.length < NUM_OF_POST_IN_CHUNK){
+        numOfPostsWithData = listOfPosts.length;
+      }
+      let result = {'num_of_posts':numOfPostsWithData, 'posts': feed};
       console.log(JSON.stringify(result));
       res.status(200).send(JSON.stringify(result));
     }).catch(err => {
@@ -73,7 +78,8 @@ export const getFeedModule = function(req, res) {
   async function getAllPostsByUserPref(uid) {
     //IMPORTENT!!!! user uid == user post preferences uid
     let userPostPref = (await DBController.getDocByUid(uid, "post_preferences")).data();
-    let promises = (await getlocationsWithinRadius(userPostPref.location, userPostPref.radius)).map(async location => {
+    
+    let promises = (await getlocationsWithinRadius(userPostPref.location, userPostPref.radius)).map(async location => {    
       let locationPosts = location.data().posts;
       return getPostFromLocation(locationPosts, userPostPref);
     });
@@ -82,16 +88,15 @@ export const getFeedModule = function(req, res) {
       return await createFeedWithFirstChunkOfPosts(postArr.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK);
     }).catch(err => {
       console.log(err);
-      throw new Error(err);
     });
   }
 }
 
 async function createFeedWithFirstChunkOfPosts(postArr, I_numOfPostsWithData){
   let numOfPostsWithData = I_numOfPostsWithData
-
+  
   for (let i = 0; i < postArr.length; i++) {
-    if (numOfPostsWithData){
+    if (postArr[i] != null && numOfPostsWithData){
       numOfPostsWithData--
       let post = await DBController.getDocByUid(postArr[i].id, "posts");
       postArr[i] = post.data();
@@ -127,10 +132,18 @@ async function isPostMeetsThePreferences(userPostPref, post){
     let publisher = publisherRef.data(); 
     let publisherAge = moment().diff(moment(publisher.birthday, "MM/DD/YYYY"), 'years', false);
     
-    if (userPostPref.Categories.some(r => post.category.includes(r)) &&
+    /*console.log("post: " + post.id);
+    console.log("category include: " + userPostPref.categories.some(r => post.category.includes(r)));
+    console.log("userPostPref.gender: " + userPostPref.gender);
+    console.log("publisher.gender: " + publisher.gender);
+    console.log("max age: " + (userPostPref.max_age));
+    console.log("min age: " + (userPostPref.min_age));
+    console.log("");*/
+
+    if (userPostPref.categories.some(r => post.category.includes(r)) &&
         userPostPref.gender.includes(publisher.gender) &&
-        publisherAge <= userPostPref.maxAge &&
-        publisherAge >= userPostPref.minAge &&
+        publisherAge <= userPostPref.max_age &&
+        publisherAge >= userPostPref.min_age &&
         post.publisher != user_id &&
         post.distribution > post.views){
       res = true;
@@ -142,7 +155,7 @@ async function isPostMeetsThePreferences(userPostPref, post){
 
 async function getlocationsWithinRadius(location, radius){ 
   const query: GeoQuery = geocollection.near({ center: location, radius: radius});
-  return query.get().then((value: GeoQuerySnapshot) => {
+  return query.get().then((value: GeoQuerySnapshot) => {    
     return value.docs;
   });
 }
@@ -155,20 +168,20 @@ async function getPostFromLocation(locationPosts, userPostPref){
   let numOfPotentialPostsToRet = numOfPostOverPeriodTime(locationPosts, PRIOD_TIME_OF_LOCATION_POSTS);
   
   promises = await getPotentialPostsFromThePeriodTime(locationPosts, userPostPref, numOfPotentialPostsToRet);
-  let res =  await Promise.all(promises).then(async potentialPostToRetArr => { return postLottery(potentialPostToRetArr)});
+  let res =  await Promise.all(promises).then(async potentialPostToRetArr => {return postLottery(potentialPostToRetArr);});
   
   return res;
 }
 
 /* postsArr - sort array with all posts, the newest post set on last index*/
 function numOfPostOverPeriodTime(postsArr, priodTime){
-  let numOfPostWhitinPariod = 0;
+  let numOfPostWhitinPariod = 1;
   let lastPostPublishedTime = moment(postsArr[postsArr.length -1].timeStamp.toDate());
   
-  for(let i = postsArr.length -1; i >= 0 ; i--){
+  for(let i = postsArr.length -2; i >= 0 ; i--){
     let diffMinutes = lastPostPublishedTime.diff(moment(postsArr[i].timeStamp.toDate()), "minutes");
-
-    if (-diffMinutes <= priodTime && diffMinutes <= 0){
+    
+    if (diffMinutes <= priodTime){
       numOfPostWhitinPariod++;
     } else {
       break;
@@ -190,7 +203,7 @@ function postLottery(postArr){
 
   if (numOfTickets == 0){
     console.log("no post to lottery.");
-    return null
+    return null;
   }
   let winnerNumber = Math.floor((Math.random() * Math.floor(numOfTickets)));
   
@@ -208,6 +221,7 @@ async function getPotentialPostsFromThePeriodTime(locationPosts, userPostPref, i
 
   for(let i = locationPosts.length - 1; numOfPotentialPostsToRet > 0; i--){
     numOfPotentialPostsToRet--;
+
     await DBController.getDocByUid(locationPosts[i].id, "posts").then(async postRef => {
       await isPostMeetsThePreferences(userPostPref, postRef.data()).then(async res => {
         if (res){

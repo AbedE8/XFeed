@@ -57,14 +57,13 @@ export const uploadPostModule = function(req, res) {
 				description: i_description,
 				img_url: i_img_url,
 				timeStamp: i_timeStamp,
-				comments: [],
-				likes: [],
+				likes: {},
 				referred_users: [],
 				distribution: userRef.data().post_distribution,
 				views: 0,
 				feature_name: i_feature_name
 			};
-	
+			
 			return await DBController.insertDocumentToCollection('posts', newPost, "new post published.").then( newPostRef => {
 				console.log(newPostRef.id);
 				newPostRef.update({
