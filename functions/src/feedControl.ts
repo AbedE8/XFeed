@@ -88,29 +88,29 @@ export const getFeedModule = function(req, res) {
       return await createFeedWithFirstChunkOfPosts(postArr.sort(sortByPublishedTime), NUM_OF_POST_IN_CHUNK, true);
     }).catch(err => {
       console.log(err);
+      return [];
     });
   }
 }
 
 async function createFeedWithFirstChunkOfPosts(postArr, I_numOfPostsWithData, toIncView){
   let numOfPostsWithData = I_numOfPostsWithData
-
+  let postsToRet = [];
+  
   for (let i = 0; i < postArr.length; i++) {
     if (postArr[i] != null && numOfPostsWithData){
       numOfPostsWithData--
       let post = await DBController.getDocByUid(postArr[i].id, "posts");
-      postArr[i] = post.data();
+      postsToRet.push(post.data());
       if (toIncView){
         DBController.incrementDocField("posts", post.data().id, "views", 1);
       }
     } else if (postArr[i] != null){
-      postArr[i] = {'post_id':postArr[i].id};
-    } else {
-      postArr.splice(i,1)
+      postsToRet.push({'post_id':postArr[i].id});
     }
   }
-
-  return postArr
+  
+  return postsToRet
 }
 
 function sortByPublishedTime(postA, postB){
@@ -205,6 +205,7 @@ function postLottery(postArr){
 
   if (numOfTickets == 0){
     console.log("no post to lottery.");
+    //TODO: need to return without returning null
     return null;
   }
   let winnerNumber = Math.floor((Math.random() * Math.floor(numOfTickets)));
