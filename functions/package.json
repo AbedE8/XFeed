@@ -7,10 +7,11 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "localhost": "firebase serve --only functions",
+    "localhost": "firebase serve",
     "build": "tsc",
     "update": "npm i",
-    "relogin": "firebase login --reauth"
+    "relogin": "firebase login --reauth",
+    "emulator": "firebase emulators:start"
   },
   "engines": {
     "node": "8"

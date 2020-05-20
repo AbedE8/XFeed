@@ -21,3 +21,13 @@ export const getLocationFeed = functions.https.onRequest((req, res) => {
   getLocationFeedModule(req, res);
 })
 
+/*export const updateCollection = functions.https.onRequest((req, res) => {
+  admin.firestore().collection(collection_name).get().then(postsRef => {
+    postsRef.forEach(post => {
+      post.ref.update({field: value});
+    })
+    res.status(200).send();
+  })
+})*/
+
+

@@ -1,4 +1,5 @@
 import { DBController } from "./DBApi"
+import { FCMcontroller } from "./FCMApi"
 import { GeoCollectionReference, GeoQuery, GeoQuerySnapshot } from 'geofirestore';
 import { geofirestore } from "./geoFire"
 import * as moment from 'moment';
@@ -44,7 +45,7 @@ export const getLocationFeedModule = function(req, res) {
 user_id -         user DB id
 userPostPref - contain all user preferences for posts:
   -categories -  list of strings of the required categories (Food, NightLife, Activities, Culture, Outdoors, Shopping, Info)
-  -gender -      "Male, Female" - the gender of the publisher of post that user want to see.
+  -gender -      "male, female" - the gender of the publisher of post that user want to see.
   -minAge -      posts that there publisher age is not larger
   -maxAge -      posts that there publisher age is not smaller
   -location -    (geopoint)contain the latitude and longitude of the location the user want to get post by.
@@ -72,16 +73,21 @@ export const getFeedModule = function(req, res) {
       res.status(404).send(err);
       });
   }
-  
+
   compileFeedPost().then().catch();
+  //async function test() {FCMcontroller.sendNotification(); }
+  //test().then().catch();
 
   async function getAllPostsByUserPref(uid) {
     //IMPORTENT!!!! user uid == user post preferences uid
-    let userPostPref = (await DBController.getDocByUid(uid, "post_preferences")).data();
-    
-    let promises = (await getlocationsWithinRadius(userPostPref.location, userPostPref.radius)).map(async location => {    
-      let locationPosts = location.data().posts;
-      return getPostFromLocation(locationPosts, userPostPref);
+    let promises = await DBController.getDocByUid(uid, "post_preferences").then(async userPostPrefSnap => {
+      let userPostPref = userPostPrefSnap.data();
+      return await getlocationsWithinRadius(userPostPref.location, userPostPref.radius).then(async locations => {
+        return locations.map(async location => {    
+          let locationPosts = location.data().posts;
+          return getPostFromLocation(locationPosts, userPostPref);
+        });
+      })
     });
   
     return await Promise.all(promises).then(async postArr => {
@@ -143,11 +149,11 @@ async function isPostMeetsThePreferences(userPostPref, post){
     console.log("");*/
 
     if (userPostPref.categories.some(r => post.category.includes(r)) &&
-        userPostPref.gender.includes(publisher.gender) &&
         publisherAge <= userPostPref.max_age &&
         publisherAge >= userPostPref.min_age &&
         post.publisher != user_id &&
-        post.distribution > post.views){
+        post.distribution > post.views &&
+        post.genders.includes(publisher.gender)){
       res = true;
     }
   
