@@ -136,28 +136,34 @@ function sortByPublishedTime(postA, postB){
 
 async function isPostMeetsThePreferences(userPostPref, post){
   let res = false;
-  return await DBController.getDocByUid(post.publisher, "users").then( publisherRef => {
+  return await DBController.getDocByUid(post.publisher, "users").then(async publisherRef => {
     let publisher = publisherRef.data(); 
     let publisherAge = moment().diff(moment(publisher.birthday, "MM/DD/YYYY"), 'years', false);
     
-    /*console.log("post: " + post.id);
-    console.log("category include: " + userPostPref.categories.some(r => post.category.includes(r)));
-    console.log("userPostPref.gender: " + userPostPref.gender);
-    console.log("publisher.gender: " + publisher.gender);
-    console.log("max age: " + (userPostPref.max_age));
-    console.log("min age: " + (userPostPref.min_age));
-    console.log("");*/
+    return await DBController.getDocByUid(user_id, "users").then( userRef => {
+      let user = userRef.data(); 
+      let userAge = moment().diff(moment(user.birthday, "MM/DD/YYYY"), 'years', false);
+      /*console.log("post: " + post.id);
+      console.log("category include: " + userPostPref.categories.some(r => post.category.includes(r)));
+      console.log("userPostPref.gender: " + userPostPref.gender);
+      console.log("publisher.gender: " + publisher.gender);
+      console.log("max age: " + (userPostPref.max_age));
+      console.log("min age: " + (userPostPref.min_age));
+      console.log("");*/
 
-    if (userPostPref.categories.some(r => post.category.includes(r)) &&
-        publisherAge <= userPostPref.max_age &&
-        publisherAge >= userPostPref.min_age &&
-        post.publisher != user_id &&
-        post.distribution > post.views &&
-        post.genders.includes(publisher.gender)){
-      res = true;
-    }
-  
-    return res;
+      if (userPostPref.categories.some(r => post.category.includes(r)) &&
+      publisherAge <= userPostPref.max_age &&
+      publisherAge >= userPostPref.min_age &&
+      post.min_age <= userAge &&
+      post.max_age >= userAge &&
+      post.publisher != user_id &&
+      post.distribution > post.views &&
+      post.genders.includes(publisher.gender)
+      ){
+        res = true;
+      }
+      return res;
+    })
   });
 }
 
