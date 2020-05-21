@@ -1,118 +1,62 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
-class FeedCategory extends StatefulWidget {
-  FeedCategory(this.name, this.icon, this.controller);
-  final String name;
-  final Icon icon;
-  final CategoryController controller;
+class FeedCategory {
+  final String _name;
+  final Icon _icon;
 
-  @override
-  State<StatefulWidget> createState() {
-    FeedCategoryState innerState =
-        new FeedCategoryState(this.name, this.icon, this.controller);
-    controller.addItem(innerState);
-    return innerState;
-  }
-}
-
-class CategoryController {
-  CategoryController(this.numOfAllowedOptions);
-  final int numOfAllowedOptions;
-  // ValueListenable<int> currentSelectedItems = new ValueNotifier(0);
-final currentSelectedItems = new ValueNotifier(0);
-  
-  List<FeedCategoryState> categories = new List<FeedCategoryState>();
-  addItem(FeedCategoryState newItem) {
-    categories.add(newItem);
-  }
-
-  int getNumCategories() {
-    int result = 0;
+  FeedCategory(this._name, this._icon);
+  static List<FeedCategory> categories = [
+    FeedCategory("resturant", Icon(Icons.restaurant)),
+    FeedCategory("bar", Icon(Icons.local_bar)),
+    FeedCategory("gym", Icon(Icons.fitness_center)),
+    FeedCategory("night_club", Icon(Icons.audiotrack)),
+    FeedCategory("casino", Icon(Icons.casino)),
+    FeedCategory("cafe", Icon(Icons.local_cafe)),
+    FeedCategory("food", Icon(Icons.fastfood)),
+  ];
+  static getAllCategoriesNames(){
+    List<String> result = new List();
     for (var item in categories) {
-      if (item.isSelected()) {
-        result += 1;
-      }
+      result.add(item.getName());
     }
-    
     return result;
   }
-  clearItems(){
-    categories.clear();
-    currentSelectedItems.value = 0;
-  }
-  List<String> getCategorisName() {
-    List<String> allSelected = new List<String>();
-    for (var item in categories) {
-      if (item.isSelected()) {
-        allSelected.add(item.name);
-      }
+  static List<String> genderNames = ["female","male"];
+  static List<FeedCategory> genders = <FeedCategory>[
+    FeedCategory(genderNames[0], Icon(Icons.pregnant_woman)),
+    FeedCategory(genderNames[1], Icon(Icons.person))
+  ];
+  
+  static List<Widget> buildCategories(List<FeedCategory> categories_to_build, List<bool> tapped, Function onTapCategorey) {
+    List<Widget> result = new List(categories_to_build.length);
+    for (int i = 0; i < categories_to_build.length; i++) {
+      result[i] = Container(
+          padding: EdgeInsets.all(3),
+          child: ChoiceChip(
+            label: Text(categories_to_build[i].getName()),
+            avatar: CircleAvatar(
+              child: categories_to_build[i].getIcon(),
+            ),
+            selected: tapped[i],
+            onSelected: (bool newValue) {
+              onTapCategorey(newValue, i);
+            },
+          ));
     }
-    return allSelected;
+    return result;
+  }
+  String getName() {
+    return _name;
   }
 
-  incrementItemSelected() {
-    currentSelectedItems.value += 1;
-  }
-
-  decrementItemSelected() {
-    currentSelectedItems.value -= 1;
-  }
-
-  bool canSelect() {
-    return currentSelectedItems.value < numOfAllowedOptions;
-  }
-  ValueListenable<int> getNumNotifier(){
-    return currentSelectedItems;
-  }
-}
-
-class FeedCategoryState extends State<FeedCategory> {
-  FeedCategoryState(this.name, this.icon, this.controller);
-  final CategoryController controller;
-  final String name;
-  final Icon icon;
-  bool _tapped = false;
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(3),
-      child: ChoiceChip(
-        label: Text(name),
-        avatar: CircleAvatar(
-          child: icon,
-        ),
-        selected: _tapped,
-        onSelected: (bool newValue) {
-          if (newValue) {
-            if (controller.canSelect()) {
-              setState(() {
-                _tapped = newValue;
-              });
-              controller.incrementItemSelected();
-            }
-          } else {
-            setState(() {
-              _tapped = newValue;
-            });
-            controller.decrementItemSelected();
-          }
-        },
-      ),
-    );
-  }
-
-  bool isSelected() {
-    return _tapped;
-  }
-
-  String getCatName() {
-    return name;
+  Icon getIcon() {
+    return _icon;
   }
 
   @override
-  String toStringShort() {
-    // TODO: implement toStringShort
-    return "hello";
+  String toString() {
+    return _name;
   }
 }

@@ -17,7 +17,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePage extends State<ProfilePage>
     with AutomaticKeepAliveClientMixin<ProfilePage> {
   final String profileId;
-  String currentUserId = googleSignIn.currentUser.id;
+  String currentUserId = "1";
   String view = "grid"; // default view
   bool isFollowing = false;
   bool followButtonClicked = false;
@@ -67,62 +67,62 @@ class _ProfilePage extends State<ProfilePage>
     }));
   }
 
-  followUser() {
-    print('following user');
-    setState(() {
-      this.isFollowing = true;
-      followButtonClicked = true;
-    });
+  // followUser() {
+  //   print('following user');
+  //   setState(() {
+  //     this.isFollowing = true;
+  //     followButtonClicked = true;
+  //   });
 
-    Firestore.instance.document("insta_users/$profileId").updateData({
-      'followers.$currentUserId': true
-      //firestore plugin doesnt support deleting, so it must be nulled / falsed
-    });
+  //   Firestore.instance.document("insta_users/$profileId").updateData({
+  //     'followers.$currentUserId': true
+  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
+  //   });
 
-    Firestore.instance.document("insta_users/$currentUserId").updateData({
-      'following.$profileId': true
-      //firestore plugin doesnt support deleting, so it must be nulled / falsed
-    });
+  //   Firestore.instance.document("insta_users/$currentUserId").updateData({
+  //     'following.$profileId': true
+  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
+  //   });
 
-    //updates activity feed
-    Firestore.instance
-        .collection("insta_a_feed")
-        .document(profileId)
-        .collection("items")
-        .document(currentUserId)
-        .setData({
-      "ownerId": profileId,
-      "username": currentUserModel.username,
-      "userId": currentUserId,
-      "type": "follow",
-      "userProfileImg": currentUserModel.photoUrl,
-      "timestamp": DateTime.now()
-    });
-  }
+  //   //updates activity feed
+  //   Firestore.instance
+  //       .collection("insta_a_feed")
+  //       .document(profileId)
+  //       .collection("items")
+  //       .document(currentUserId)
+  //       .setData({
+  //     "ownerId": profileId,
+  //     "username": currentUserModel.username,
+  //     "userId": currentUserId,
+  //     "type": "follow",
+  //     "userProfileImg": currentUserModel.photoUrl,
+  //     "timestamp": DateTime.now()
+  //   });
+  // }
 
-  unfollowUser() {
-    setState(() {
-      isFollowing = false;
-      followButtonClicked = true;
-    });
+  // unfollowUser() {
+  //   setState(() {
+  //     isFollowing = false;
+  //     followButtonClicked = true;
+  //   });
 
-    Firestore.instance.document("insta_users/$profileId").updateData({
-      'followers.$currentUserId': false
-      //firestore plugin doesnt support deleting, so it must be nulled / falsed
-    });
+  //   Firestore.instance.document("insta_users/$profileId").updateData({
+  //     'followers.$currentUserId': false
+  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
+  //   });
 
-    Firestore.instance.document("insta_users/$currentUserId").updateData({
-      'following.$profileId': false
-      //firestore plugin doesnt support deleting, so it must be nulled / falsed
-    });
+  //   Firestore.instance.document("insta_users/$currentUserId").updateData({
+  //     'following.$profileId': false
+  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
+  //   });
 
-    Firestore.instance
-        .collection("insta_a_feed")
-        .document(profileId)
-        .collection("items")
-        .document(currentUserId)
-        .delete();
-  }
+  //   Firestore.instance
+  //       .collection("insta_a_feed")
+  //       .document(profileId)
+  //       .collection("items")
+  //       .document(currentUserId)
+  //       .delete();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -167,8 +167,8 @@ class _ProfilePage extends State<ProfilePage>
                   borderRadius: BorderRadius.circular(5.0)),
               alignment: Alignment.center,
               child: Text(text,
-                  style: TextStyle(
-                      color: textColor, fontWeight: FontWeight.bold)),
+                  style:
+                      TextStyle(color: textColor, fontWeight: FontWeight.bold)),
               width: 250.0,
               height: 27.0,
             )),
@@ -177,43 +177,42 @@ class _ProfilePage extends State<ProfilePage>
 
     Container buildProfileFollowButton(User user) {
       // viewing your own profile - should show edit button
-      if (currentUserId == profileId) {
-        return buildFollowButton(
-          text: "Edit Profile",
-          backgroundcolor: Colors.white,
-          textColor: Colors.black,
-          borderColor: Colors.grey,
-          function: editProfile,
-        );
-      }
-
-      // already following user - should show unfollow button
-      if (isFollowing) {
-        return buildFollowButton(
-          text: "Unfollow",
-          backgroundcolor: Colors.white,
-          textColor: Colors.black,
-          borderColor: Colors.grey,
-          function: unfollowUser,
-        );
-      }
-
-      // does not follow user - should show follow button
-      if (!isFollowing) {
-        return buildFollowButton(
-          text: "Follow",
-          backgroundcolor: Colors.blue,
-          textColor: Colors.white,
-          borderColor: Colors.blue,
-          function: followUser,
-        );
-      }
 
       return buildFollowButton(
-          text: "loading...",
-          backgroundcolor: Colors.white,
-          textColor: Colors.black,
-          borderColor: Colors.grey);
+        text: "Edit Profile",
+        backgroundcolor: Colors.white,
+        textColor: Colors.black,
+        borderColor: Colors.grey,
+        function: editProfile,
+      );
+
+      //   // already following user - should show unfollow button
+      //   if (isFollowing) {
+      //     return buildFollowButton(
+      //       text: "Unfollow",
+      //       backgroundcolor: Colors.white,
+      //       textColor: Colors.black,
+      //       borderColor: Colors.grey,
+      //       function: unfollowUser,
+      //     );
+      //   }
+
+      //   // does not follow user - should show follow button
+      //   if (!isFollowing) {
+      //     return buildFollowButton(
+      //       text: "Follow",
+      //       backgroundcolor: Colors.blue,
+      //       textColor: Colors.white,
+      //       borderColor: Colors.blue,
+      //       function: followUser,
+      //     );
+      //   }
+
+      //   return buildFollowButton(
+      //       text: "loading...",
+      //       backgroundcolor: Colors.white,
+      //       textColor: Colors.black,
+      //       borderColor: Colors.grey);
     }
 
     Row buildImageViewButtonBar() {
@@ -247,16 +246,20 @@ class _ProfilePage extends State<ProfilePage>
     Container buildUserPosts() {
       Future<List<ImagePost>> getPosts() async {
         List<ImagePost> posts = [];
+        print("fetching my posts profileId " + profileId);
         var snap = await Firestore.instance
-            .collection('insta_posts')
-            .where('ownerId', isEqualTo: profileId)
-            .orderBy("timestamp",descending: true)
+            .collection('posts')
+            .where("publisher", isEqualTo: profileId)
+            // .orderBy("timestamp",descending: true)
             .getDocuments();
         for (var doc in snap.documents) {
-          posts.add(ImagePost.fromDocument(doc));
+          print("post "+doc.data.toString());
+          posts.add(await ImagePost.fromDocument(doc));
         }
+        // print()
         setState(() {
           postCount = snap.documents.length;
+          print("counts num " + postCount.toString());
         });
 
         return posts.reversed.toList();
@@ -276,7 +279,7 @@ class _ProfilePage extends State<ProfilePage>
             return GridView.count(
                 crossAxisCount: 3,
                 childAspectRatio: 1.0,
-//                    padding: const EdgeInsets.all(0.5),
+                padding: const EdgeInsets.all(0.5),
                 mainAxisSpacing: 1.5,
                 crossAxisSpacing: 1.5,
                 shrinkWrap: true,
@@ -296,7 +299,7 @@ class _ProfilePage extends State<ProfilePage>
 
     return StreamBuilder(
         stream: Firestore.instance
-            .collection('insta_users')
+            .collection('users')
             .document(profileId)
             .snapshots(),
         builder: (context, snapshot) {
@@ -307,11 +310,11 @@ class _ProfilePage extends State<ProfilePage>
 
           User user = User.fromDocument(snapshot.data);
 
-          if (user.followers.containsKey(currentUserId) &&
-              user.followers[currentUserId] &&
-              followButtonClicked == false) {
-            isFollowing = true;
-          }
+          // if (user.followers.containsKey(currentUserId) &&
+          //     user.followers[currentUserId] &&
+          //     followButtonClicked == false) {
+          //   isFollowing = true;
+          // }
 
           return Scaffold(
               appBar: AppBar(
@@ -344,10 +347,10 @@ class _ProfilePage extends State<ProfilePage>
                                         MainAxisAlignment.spaceEvenly,
                                     children: <Widget>[
                                       buildStatColumn("posts", postCount),
-                                      buildStatColumn("followers",
-                                          _countFollowings(user.followers)),
-                                      buildStatColumn("following",
-                                          _countFollowings(user.following)),
+                                      // buildStatColumn("followers",
+                                      //     _countFollowings(user.followers)),
+                                      // buildStatColumn("following",
+                                      //     _countFollowings(user.following)),
                                     ],
                                   ),
                                   Row(
@@ -411,7 +414,7 @@ class _ProfilePage extends State<ProfilePage>
 }
 
 class ImageTile extends StatelessWidget {
-  final ImagePost  imagePost;
+  final ImagePost imagePost;
 
   ImageTile(this.imagePost);
 

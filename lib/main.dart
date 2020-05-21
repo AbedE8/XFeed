@@ -1,6 +1,15 @@
+import 'dart:convert';
+
+import 'package:Xfeedm/categories.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:geocoder/model.dart';
+import 'package:image_downloader/image_downloader.dart';
+import 'package:path_provider/path_provider.dart';
 import 'feed.dart';
+import 'location.dart';
 import 'upload_page.dart';
 import 'dart:async';
 import 'dart:io';
@@ -15,11 +24,14 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:io' show Platform;
 import 'models/user.dart';
 import 'package:image_picker/image_picker.dart';
+import 'filter_page.dart';
 
 final auth = FirebaseAuth.instance;
 final googleSignIn = GoogleSignIn();
-final ref = Firestore.instance.collection('insta_users');
+// final ref = Firestore.instance.collection('insta_users');
+final users_ref = Firestore.instance.collection('users');
 final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+var FBlogin_a = FacebookLogin();
 
 User currentUserModel;
 
@@ -58,6 +70,28 @@ Future<Null> _ensureLoggedIn(BuildContext context) async {
   }
 }
 
+Future<Null> _ensureFBLoggedIn(BuildContext context) async {
+  FacebookLoginResult facebookLoginResult =
+      await FBlogin_a.logIn(['email', 'user_gender', 'user_birthday']);
+  switch (facebookLoginResult.status) {
+    case FacebookLoginStatus.cancelledByUser:
+      print("Cancelled");
+      break;
+    case FacebookLoginStatus.error:
+      print("error");
+      break;
+    case FacebookLoginStatus.loggedIn:
+      print("Logged In");
+      final accessToken = facebookLoginResult.accessToken.token;
+      final facebookAuthCred =
+          FacebookAuthProvider.getCredential(accessToken: accessToken);
+      final user = await auth.signInWithCredential(facebookAuthCred);
+      await tryCreateUserRecordFB(context);
+      print("User : " + user.toString());
+      break;
+  }
+}
+
 Future<Null> _silentLogin(BuildContext context) async {
   GoogleSignInAccount user = googleSignIn.currentUser;
 
@@ -80,6 +114,28 @@ Future<Null> _silentLogin(BuildContext context) async {
   }
 }
 
+Future<Null> _silentFBLogin(BuildContext context) async {
+  FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
+
+  if (accessToken == null) {
+    // user = await googleSignIn.signInSilently();
+    // await tryCreateUserRecord(context);
+    print("No access token should register");
+    return;
+  } else {
+    print("access token is valid");
+  }
+
+  if (await auth.currentUser() == null && accessToken != null) {
+    print("no authntication");
+    final FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
+    final facebookAuthCred =
+        FacebookAuthProvider.getCredential(accessToken: accessToken.token);
+    await auth.signInWithCredential(facebookAuthCred);
+  }
+  await tryCreateUserRecordFB(context);
+}
+
 Future<Null> _setUpNotifications() async {
   if (Platform.isAndroid) {
     _firebaseMessaging.configure(
@@ -98,11 +154,41 @@ Future<Null> _setUpNotifications() async {
       print("Firebase Messaging Token: " + token);
 
       Firestore.instance
-          .collection("insta_users")
+          .collection("users")
           .document(currentUserModel.id)
           .updateData({"androidNotificationToken": token});
     });
   }
+  if (Platform.isIOS) iOS_Permission();
+
+  _firebaseMessaging.getToken().then((token) {
+    print("token is " + token);
+    Firestore.instance
+        .collection("users")
+        .document(currentUserModel.id)
+        .updateData({"iosNotificationToken": token});
+  });
+
+  _firebaseMessaging.configure(
+    onMessage: (Map<String, dynamic> message) async {
+      print('on message $message');
+    },
+    onResume: (Map<String, dynamic> message) async {
+      print('on resume $message');
+    },
+    onLaunch: (Map<String, dynamic> message) async {
+      print('on launch $message');
+    },
+  );
+}
+
+void iOS_Permission() {
+  _firebaseMessaging.requestNotificationPermissions(
+      IosNotificationSettings(sound: true, badge: true, alert: true));
+  _firebaseMessaging.onIosSettingsRegistered
+      .listen((IosNotificationSettings settings) {
+    print("Settings registered: $settings");
+  });
 }
 
 Future<void> tryCreateUserRecord(BuildContext context) async {
@@ -110,7 +196,7 @@ Future<void> tryCreateUserRecord(BuildContext context) async {
   if (user == null) {
     return null;
   }
-  DocumentSnapshot userRecord = await ref.document(user.id).get();
+  DocumentSnapshot userRecord = await users_ref.document(user.id).get();
   if (userRecord.data == null) {
     // no user record exists, time to create
 
@@ -138,7 +224,7 @@ Future<void> tryCreateUserRecord(BuildContext context) async {
     );
 
     if (userName != null || userName.length != 0) {
-      ref.document(user.id).setData({
+      users_ref.document(user.id).setData({
         "id": user.id,
         "username": userName,
         "photoUrl": user.photoUrl,
@@ -149,13 +235,160 @@ Future<void> tryCreateUserRecord(BuildContext context) async {
         "following": {},
       });
     }
-    userRecord = await ref.document(user.id).get();
+    userRecord = await users_ref.document(user.id).get();
   }
 
-  currentUserModel = User.fromDocument(userRecord);
+  currentUserModel = await User.fromDocument(userRecord);
   return null;
 }
 
+Future<String> _downloadImage(
+    String photoURL, String uid, var httpClient) async {
+  // var httpClient = HttpClient();
+  // var req = await httpClient.getUrl(Uri.parse(photoURL));
+  // var _dir = (await getApplicationDocumentsDirectory()).path;
+  // String imagePath = _dir+'/'+uid;
+  // var file = File(imagePath);
+  // await file.writeAsBytes(req.bodyBytes);
+
+  var imageId = await ImageDownloader.downloadImage(photoURL);
+  if (imageId == null) {
+    print("image library doesnt work");
+    return null;
+  }
+  var path = await ImageDownloader.findPath(imageId);
+
+  var file = File(path);
+  print("19191919191991919191919199191 " + path.toString());
+  // String image_path =  await uploadImage(file);
+  // var uuid = Uuid().v1();
+  StorageReference ref =
+      FirebaseStorage.instance.ref().child("usersImages").child("$uid.jpg");
+  StorageUploadTask uploadTask = ref.putFile(file);
+
+  String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
+  return downloadUrl;
+  // print("image file downloaded and located at"+image_path);
+  // return image_path;
+}
+
+// TODO: implimint this window to get username/nickname from user instead of fb
+Future<String> getNickname(var contexts) async {
+  String userName = await Navigator.push(
+    contexts,
+    MaterialPageRoute(
+        builder: (context) => Center(
+              child: Scaffold(
+                  appBar: AppBar(
+                    leading: Container(),
+                    title: Text('Fill out missing data',
+                        style: TextStyle(
+                            color: Colors.black, fontWeight: FontWeight.bold)),
+                    backgroundColor: Colors.white,
+                  ),
+                  body: ListView(
+                    children: <Widget>[
+                      Container(
+                        child: CreateAccount(),
+                      ),
+                    ],
+                  )),
+            )),
+  );
+  return userName;
+}
+
+void createNewUser(
+    Map<String, dynamic> user_data, String photo_FB_URL, String userName) async {
+      print("createNewUser: here id "+user_data['id']);
+  await users_ref.document(user_data['id']).setData({
+    "bio": "",
+    "birthday": user_data['birthday'],
+    "credit": "",
+    "email": user_data['email'],
+    "first_name": user_data['first_name'],
+    "gender": user_data['gender'],
+    "last_name": user_data['last_name'],
+    "post_distribution": 250,
+    "profile_pic_url": photo_FB_URL,
+    "registration_date": DateTime.now(),
+    "username": userName
+  });
+  //After creating user record we should update user preference to default
+  Coordinates current_cordinate = await getUserCordinate();
+
+  await Firestore.instance
+    .collection("post_preferences")
+    .document(user_data['id']).setData({
+      "categories":FeedCategory.getAllCategoriesNames(),
+      "radius":1,
+      "gender":FeedCategory.genderNames,
+      "location":GeoPoint(current_cordinate.latitude, current_cordinate.longitude),
+      "min_age":FilterPosts.minAge,
+      "max_age":FilterPosts.maxAge
+    });
+  
+}
+
+Future<void> tryCreateUserRecordFB(BuildContext context) async {
+  // final user_token = await FBlogin_a.currentAccessToken.accessToken;
+// final result = await facebookSignIn.logInWithReadPermissions(['email']);
+  final FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
+
+  if (accessToken == null) {
+    print("No user token exist");
+    return null;
+  }
+  // print("token is " + accessToken.token);
+  var httpClient = HttpClient();
+
+  try {
+    var request = await httpClient.getUrl(Uri.parse(
+        'https://graph.facebook.com/v2.12/me?fields=name,first_name,last_name,email,gender,birthday,picture&access_token=${accessToken.token}'));
+    var response = await request.close();
+    if (response.statusCode == HttpStatus.ok) {
+      String json = await response.transform(utf8.decoder).join();
+      Map<String, dynamic> user_data = jsonDecode(json);
+      String photo_FB_URL = user_data['picture']['data']['url'].toString();
+      print("printing data " + user_data.toString());
+
+      DocumentSnapshot userRecord =
+          await users_ref.document(user_data['id']).get();
+      if (userRecord.data == null) {
+        print("no user record exists, time to create");
+        // String nickname = await getNickname(context);
+        // print("nickname is "+nickname);
+        // String profilePic = await _downloadImage(photo_FB_URL, user_data['id'], httpClient);
+        String userName = user_data['name']; //see getnickname
+        await createNewUser(user_data, photo_FB_URL, userName);
+        userRecord = await users_ref.document(user_data['id']).get();
+      } else {
+        //TODO : download user photo once registered and upload it
+        print("user phtot updated");
+        await users_ref
+            .document(user_data['id'])
+            .updateData({"profile_pic_url": photo_FB_URL});
+      }
+
+      currentUserModel = User.fromDocument(userRecord);
+      await currentUserModel.setUserPref();
+      print("######user record created######");
+    } else {
+      print(
+          'Error sending token to facebook: Http status ${response.statusCode} ');
+    }
+  } catch (exception) {
+    print('Failed invoking the getFeed function. Exception: $exception');
+  }
+
+  return null;
+}
+updateCurrentUser(User currentUser, UserPreference pref) {
+  //  DocumentSnapshot userRecord = await users_ref.document(userId).get();
+  //  currentUserModel = await User.fromDocument(userRecord);
+  //  await currentUser.setUserPref();
+  currentUser.preferences = pref;
+}
 class Fluttergram extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -190,10 +423,10 @@ class HomePage extends StatefulWidget {
 PageController pageController;
 
 class _HomePageState extends State<HomePage> {
- final int feedPage = 0;
- final int searchPage = 1;
- final int favoritePage = 2;
- final int profilePage = 3; 
+  final int feedPage = 0;
+  final int searchPage = 1;
+  final int favoritePage = 2;
+  final int profilePage = 3;
   bool triedSilentLogin = false;
   bool setupNotifications = false;
   File imageFile;
@@ -215,8 +448,9 @@ class _HomePageState extends State<HomePage> {
               GestureDetector(
                 onTap: login,
                 child: Image.asset(
-                  "assets/images/google_signin_button.png",
-                  width: 225.0,
+                  "assets/images/FB_image.png",
+                  width: 255,
+                  // height: 70,
                 ),
               )
             ],
@@ -228,15 +462,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("building page");
     if (triedSilentLogin == false) {
-      silentLogin(context);
+      silentFBLogin(context);
     }
 
     if (setupNotifications == false && currentUserModel != null) {
       setUpNotifications();
     }
-
-    return (googleSignIn.currentUser == null || currentUserModel == null)
+    print("acceccToken " +
+        (FBlogin_a.currentAccessToken == null ? "true" : "false") +
+        " current_model " +
+        (currentUserModel == null ? "true" : "false"));
+    return (FBlogin_a.currentAccessToken == null || currentUserModel == null)
         ? buildLoginPage()
         : Scaffold(
             body: PageView(
@@ -250,7 +488,7 @@ class _HomePageState extends State<HomePage> {
                 Container(
                     color: Colors.white,
                     child: ProfilePage(
-                      userId: googleSignIn.currentUser.id,
+                      userId: currentUserModel.id,
                     )),
               ],
               controller: pageController,
@@ -270,7 +508,8 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       imageFile = image;
                       imageFile == null
-                          ? pageController.jumpToPage(feedPage) //jump to feed page in case no image captured
+                          ? pageController.jumpToPage(
+                              feedPage) //jump to feed page in case no image captured
                           : Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -339,9 +578,17 @@ class _HomePageState extends State<HomePage> {
           );
   }
 
-  void login() async {
-    await _ensureLoggedIn(context);
+  void _FBlogin() async {
+    await _ensureFBLoggedIn(context);
     setState(() {
+      triedSilentLogin = true;
+    });
+  }
+
+  void login() async {
+    await _ensureFBLoggedIn(context);
+    setState(() {
+      print("@@@@@@@here");
       triedSilentLogin = true;
     });
   }
@@ -353,9 +600,17 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  void silentLogin(BuildContext context) async {
-    await _silentLogin(context);
+  // void silentLogin(BuildContext context) async {
+  //   await _silentLogin(context);
+  //   setState(() {
+  //     triedSilentLogin = true;
+  //   });
+  // }
+
+  void silentFBLogin(BuildContext context) async {
+    await _silentFBLogin(context);
     setState(() {
+      print("here00000000000");
       triedSilentLogin = true;
     });
   }

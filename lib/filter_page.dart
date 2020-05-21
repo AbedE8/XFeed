@@ -1,87 +1,119 @@
+import 'package:Xfeedm/models/user.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'categories.dart';
+import 'filter_map.dart';
 
-class ActivityItem {
-  const ActivityItem(this.name, this.icon);
-  final String name;
-  final Icon icon;
+class FilterPosts extends StatefulWidget {
+  // This class is the configuration for the state. It holds the
+  // values (in this case nothing) provided by the parent and used by the build
+  // method of the State. Fields in a Widget subclass are always marked "final".
+  FilterPosts(this.pref);
+  final UserPreference pref;
+  static final double minAge = 18;
+  static final double maxAge = 70;
+  @override
+  _Filter createState() => new _Filter(this.pref);
+}
 
-  static List<ActivityItem> activites = <ActivityItem>[
-    const ActivityItem("Food", Icon(Icons.fastfood)),
-    const ActivityItem("Party", Icon(Icons.audiotrack)),
-    const ActivityItem("Sport", Icon(Icons.fitness_center)),
-    const ActivityItem("Education", Icon(Icons.school))
-  ];
-  static ActivityItem getCategoryByName(String name) {
-    for (var activ in activites) {
-      if (activ.name == name) {
-        return activ;
-      }
+class _Filter extends State<FilterPosts> {
+  _Filter(this.userPref);
+
+  List<FeedCategory> categories = FeedCategory.categories;
+  List<FeedCategory> genders = FeedCategory.genders;
+  RangeValues _rangeValue;
+  RangeLabels _rangeLabels = new RangeLabels(
+      FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
+  int _ageStart = FilterPosts.minAge.toInt();
+  int _ageEnd = FilterPosts.maxAge.toInt();
+  final UserPreference userPref;
+  FilterMapController _filterMapController =
+      new FilterMapController(null, null);
+  List<bool> _tappedCategory;
+  List<String> _chosedCategories;
+  // List<bool> _tappedGender;
+  // List<String> _chosedGenders;
+  @override
+  Future<void> initState() {
+    super.initState();
+
+    print("creating filter based on userPref");
+    _rangeValue = new RangeValues(
+        userPref.min_age.toDouble(), userPref.max_age.toDouble());
+    _tappedCategory = new List(categories.length);
+    for (var i = 0; i < _tappedCategory.length; i++) {
+      _tappedCategory[i] =
+          userPref.categories.indexOf(categories[i].getName()) == -1
+              ? false
+              : true;
+    }
+    _chosedCategories = new List.from(userPref.categories);
+    // _tappedGender = new List(genders.length);
+    // for (var i = 0; i < genders.length; i++) {
+    //   _tappedGender[i] =
+    //       userPref.gender.indexOf(genders[i].getName()) == -1 ? false : true;
+    // }
+    // _chosedGenders = new List.from(userPref.gender);
+  }
+
+  // onTappedGender(bool newValue, int index) {
+  //   if (!newValue) {
+  //     setState(() {
+  //       _tappedGender[index] = newValue;
+  //       _chosedGenders.remove(genders[index].getName());
+  //     });
+  //   } else {
+  //     setState(() {
+  //       _tappedGender[index] = newValue;
+  //       _chosedGenders.add(genders[index].getName());
+  //     });
+  //   }
+  // }
+
+  onTappedCategory(bool newValue, int index) {
+    if (!newValue) {
+      setState(() {
+        _tappedCategory[index] = newValue;
+        _chosedCategories.remove(categories[index].getName());
+      });
+    } else {
+      setState(() {
+        _tappedCategory[index] = newValue;
+        _chosedCategories.add(categories[index].getName());
+      });
+    }
+  }
+
+  UserPreference createUserPref() {
+    GeoPoint point;
+    double radius;
+    if (_filterMapController.center != null) {
+      point = new GeoPoint(_filterMapController.center.latitude,
+          _filterMapController.center.longitude);
+    } else {
+      point = userPref.location;
+    }
+    if (_filterMapController.radius == null) {
+      radius = userPref.radious;
+      print("radius is null putiing old radius " + radius.toString());
+    } else {
+      radius = _filterMapController.radius;
+    }
+    if (_chosedCategories.length > 0) {
+      return UserPreference(
+          categories: _chosedCategories,
+          min_age: _rangeValue.start.toInt(),
+          max_age: _rangeValue.end.toInt(),
+          // gender: _chosedGenders,
+          location: point,
+          radious: radius);
     }
     return null;
   }
 
-  // buildCategoryIcon(String text) {
-  //   return Container(
-  //     child: ChoiceChip(
-  //       padding: EdgeInsets.all(10),
-  //       label: Text(text),
-  //       avatar: CircleAvatar(child: ActivityItem.getCategoryByName(text).icon),
-  //       selected: null,
-  //       onSelected: ,
-  //     ),
-  //   );
-  // }
-}
-
-class FilterItems {
-  const FilterItems(this.categories);
-  final List<String> categories;
-  void printSelectedCategories() {
-    for (var item in categories) {
-      print("category " + item);
-    }
-  }
-}
-
-class Filter extends StatefulWidget {
-  // This class is the configuration for the state. It holds the
-  // values (in this case nothing) provided by the parent and used by the build
-  // method of the State. Fields in a Widget subclass are always marked "final".
-
-  @override
-  _Filter createState() => new _Filter();
-}
-
-class _Filter extends State<Filter> {
-  static CategoryController categoryController = new CategoryController(10);
-  static CategoryController genderController = new CategoryController(2);
-  List<FeedCategory> categories = <FeedCategory>[
-    FeedCategory("Food", Icon(Icons.fastfood), categoryController),
-    FeedCategory("Sport", Icon(Icons.fitness_center), categoryController),
-    FeedCategory("Party", Icon(Icons.audiotrack), categoryController),
-    FeedCategory("Education", Icon(Icons.school), categoryController),
-    FeedCategory("ALL", Icon(Icons.all_inclusive), categoryController),
-  ];
-  List<FeedCategory> genders = <FeedCategory>[
-    FeedCategory("Female", Icon(Icons.pregnant_woman), genderController),
-    FeedCategory("Male", Icon(Icons.person), genderController)
-  ];
-  static final double startAge = 18;
-  static final double endAge = 70;
-  RangeValues _rangeValue = new RangeValues(startAge, endAge);
-  RangeLabels _rangeLabels =
-      new RangeLabels(startAge.toString(), endAge.toString());
-  int _start = startAge.toInt();
-  int _end = endAge.toInt();
-  double filterDistance = 0;
-  // int dis = filterDistance.toInt();
   @override
   Widget build(BuildContext context) {
-    var distance = filterDistance.toInt();
-
     return new Scaffold(
         appBar: new AppBar(
           backgroundColor: Colors.white,
@@ -92,12 +124,7 @@ class _Filter extends State<Filter> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.pop(
-                  context,
-                  categoryController.getNumCategories() > 0
-                      ? new FilterItems(categoryController.getCategorisName())
-                      : null);
-              categoryController.clearItems();
+              Navigator.pop(context, createUserPref());
             },
           ),
         ),
@@ -106,14 +133,7 @@ class _Filter extends State<Filter> {
           children: <Widget>[
             Expanded(
               flex: 60,
-              child: Container(
-                child: Center(
-                  child: Text(
-                    "Map",
-                    style: TextStyle(fontSize: 40),
-                  ),
-                ),
-              ),
+              child: FilterMap(userPref, _filterMapController),
             ),
             Column(
               children: <Widget>[
@@ -122,7 +142,7 @@ class _Filter extends State<Filter> {
                     "Select Category",
                     style: TextStyle(fontSize: 18),
                   ),
-                  padding: EdgeInsets.only(left: 16),
+                  padding: EdgeInsets.fromLTRB(16, 10, 16, 1),
                 )
               ],
             ),
@@ -130,57 +150,21 @@ class _Filter extends State<Filter> {
               padding: EdgeInsets.all(5),
             ),
             Wrap(
-              children: categories,
+              children: FeedCategory.buildCategories(
+                  categories, _tappedCategory, onTappedCategory),
             ),
             // Padding(
             //   padding: EdgeInsets.all(5),
             // ),
             Column(
-              children: <Widget>[
-                Padding(
-                  child: Text(
-                    "Around me ",
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  padding: EdgeInsets.only(left: 16),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.only(left: 40),
-                    ),
-                    Expanded(
-                      flex: 9,
-                      child: CupertinoSlider(
-                        value: filterDistance,
-                        onChanged: (newDis) {
-                          setState(() {
-                            filterDistance = newDis;
-                          });
-                        },
-                        min: 0,
-                        max: 20,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Padding(
-                          child: Text("$distance Km"),
-                          padding: EdgeInsets.only(
-                            left: 16,
-                          )),
-                    )
-                  ],
-                ),
-              ],
+              children: <Widget>[],
             ),
             Row(
               children: <Widget>[
                 Expanded(
                   flex: 1,
                   child: Padding(
-                      child: Text("$_start"),
+                      child: Text("$_ageStart"),
                       padding: EdgeInsets.only(
                         left: 18,
                       )),
@@ -198,8 +182,8 @@ class _Filter extends State<Filter> {
                         ),
                       ),
                       RangeSlider(
-                          min: 18,
-                          max: 70,
+                          min: FilterPosts.minAge,
+                          max: FilterPosts.maxAge,
                           values: _rangeValue,
                           labels: _rangeLabels,
                           onChanged: (RangeValues values) {
@@ -208,8 +192,8 @@ class _Filter extends State<Filter> {
                               _rangeLabels = new RangeLabels(
                                   values.start.toString(),
                                   values.end.toString());
-                              _start = values.start.toInt();
-                              _end = values.end.toInt();
+                              _ageStart = values.start.toInt();
+                              _ageEnd = values.end.toInt();
                             });
                           }),
                     ],
@@ -218,22 +202,12 @@ class _Filter extends State<Filter> {
                 Expanded(
                   flex: 1,
                   child: Padding(
-                      child: Text("$_end"),
+                      child: Text("$_ageEnd"),
                       padding: EdgeInsets.only(
                         right: 16,
                       )),
                 )
               ],
-            ),
-            Padding(
-              padding: EdgeInsets.all(5),
-              child: Text(
-                "Gender",
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            Wrap(
-              children: genders,
             ),
             Padding(
               padding: EdgeInsets.only(bottom: 10),

@@ -1,7 +1,11 @@
+import 'package:Xfeedm/models/user.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoder/geocoder.dart';
 import 'filter_page.dart';
 import 'image_post.dart';
 import 'dart:async';
+import 'location.dart';
 import 'main.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -13,18 +17,26 @@ class Feed extends StatefulWidget {
 
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
-  FilterItems filterData = null;
+  UserPreference filterData = null;
+  Coordinates cordinate;
   @override
   void initState() {
     super.initState();
     this._loadFeed();
+    initLocation();
   }
-
+  initLocation () async {
+   Coordinates cordinate_1 = await getUserCordinate();
+    setState(() {
+      cordinate = cordinate_1;
+    });
+  }
   buildFeed() {
     if (feedData != null) {
       return ListView(
         children: feedData,
       );
+      
     } else {
       return Container(
           alignment: FractionalOffset.center,
@@ -51,19 +63,16 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
               ),
               onPressed: () async {
                 filterData = await Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => Filter()))
-                    as FilterItems;
-                // var filter = Filter();
-                //return Container(child: Filter(),);
-                // filterData.printSelectedCategories();
+                        MaterialPageRoute(builder: (context) => FilterPosts(currentUserModel.preferences)))
+                    as UserPreference;
+                print("back from filter page "+filterData.toString());
                 if (filterData != null) {
                   setState(() {
-                    feedData = null;
+                    feedData = null; //should set feedData to null in order to stop showing same old feed
                   });
+                  await _updateUserPreference();
                   _getFeed();
                 }
-
-                // print("back from filter "+filterData.category.name);
               },
             );
           },
@@ -71,12 +80,30 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
-        child: buildFeed(),
+        child: feedData != null ? ListView.builder(itemBuilder: (context,index){
+          return feedData[index];
+        } ,itemCount: feedData.length): Text(""),/*buildFeed(),*/
       ),
     );
   }
-
+  _updateUserPreference() async{
+    if (filterData == null){
+      return;
+    }
+    await Firestore.instance
+    .collection("post_preferences")
+    .document(currentUserModel.id).setData({
+      "categories":filterData.categories,
+      "radius":filterData.radious,
+      "location":filterData.location,
+      "min_age":filterData.min_age,
+      "max_age":filterData.max_age
+    });
+    //need to update currentUserModel because of post preferences change
+    updateCurrentUser(currentUserModel, filterData);
+  }
   Future<Null> _refresh() async {
+    print("asked for refresh give him more ");
     await _getFeed();
 
     setState(() {});
@@ -85,41 +112,31 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   }
 
   _loadFeed() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String json = prefs.getString("feed");
 
-    if (json != null) {
-      List<Map<String, dynamic>> data =
-          jsonDecode(json).cast<Map<String, dynamic>>();
-      List<ImagePost> listOfPosts = _generateFeed(data);
-      setState(() {
-        feedData = listOfPosts;
-      });
-    } else {
       _getFeed();
-    }
   }
-
+  
+  bool validate(Map<String, dynamic> data) {
+    int num_of_posts = data['num_of_posts'];
+    if(num_of_posts == 0)
+    {
+      return false;
+    }
+    else{
+      return true;
+    }
+    
+  }
   _getFeed() async {
     print("Staring getFeed");
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String userId = googleSignIn.currentUser.id.toString();
+    String userId = currentUserModel.id.toString();
 
-    var url;
-    if (filterData != null) {
-      print("here request is "+filterData.categories.toString() );
-      url =
-          'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?category=' +
-              filterData.categories.toString() +
-              '&uid=' +
-              userId;
-    } else {
-      url = 'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' +
-          userId;
-    }
-
+    var url = 'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' + userId;
+    
+    print("url is "+url);
     var httpClient = HttpClient();
 
     List<ImagePost> listOfPosts;
@@ -130,9 +147,21 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
       if (response.statusCode == HttpStatus.ok) {
         String json = await response.transform(utf8.decoder).join();
         prefs.setString("feed", json);
-        List<Map<String, dynamic>> data =
-            jsonDecode(json).cast<Map<String, dynamic>>();
-        listOfPosts = _generateFeed(data);
+        print("json is "+json);
+
+        Map<String, dynamic> data_in_json = jsonDecode(json);
+        print("num_of_posts "+data_in_json['num_of_posts'].toString());
+        List<Map<String, dynamic>> data = data_in_json['posts'].cast<Map<String, dynamic>>();
+        if (validate(data_in_json) == true){
+          int num_of_posts = data_in_json['num_of_posts'];
+          listOfPosts = await _generateFeed(data, num_of_posts);
+
+        }
+        else{
+          print("data from server failed in validation");
+        }
+        //String post_id = data[1]['post_id'];
+        //print("list is "+post_id)
         result = "Success in http request for feed";
       } else {
         result =
@@ -149,12 +178,16 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     });
   }
 
-  List<ImagePost> _generateFeed(List<Map<String, dynamic>> feedData) {
+  Future<List<ImagePost>> _generateFeed(List<Map<String, dynamic>> feedData, int num_of_posts) async {
     List<ImagePost> listOfPosts = [];
+    var i ;
 
-    for (var postData in feedData) {
-      listOfPosts.add(ImagePost.fromJSON(postData));
+    for ( i = 0; i < num_of_posts; i++) {
+      listOfPosts.add(await ImagePost.fromJSON(feedData[i]));
     }
+    for (var j = i; j < feedData.length; j++) {
+      listOfPosts.add(await ImagePost.fromID(feedData[j]['post_id']));
+    } 
 
     return listOfPosts;
   }

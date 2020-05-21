@@ -53,6 +53,7 @@ class _ActivityFeedPageState extends State<ActivityFeedPage> with AutomaticKeepA
         .getDocuments();
 
     for (var doc in snap.documents) {
+      
       items.add(ActivityFeedItem.fromDocument(doc));
     }
     return items;

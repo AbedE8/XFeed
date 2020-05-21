@@ -29,10 +29,10 @@ class EditProfilePage extends StatelessWidget {
 
   applyChanges() {
     Firestore.instance
-        .collection('insta_users')
+        .collection('users')
         .document(currentUserModel.id)
         .updateData({
-      "displayName": nameController.text,
+      "username": nameController.text,
       "bio": bioController.text,
     });
   }
@@ -62,7 +62,7 @@ class EditProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return FutureBuilder(
         future: Firestore.instance
-            .collection('insta_users')
+            .collection('users')
             .document(currentUserModel.id)
             .get(),
         builder: (context, snapshot) {
@@ -121,7 +121,8 @@ class EditProfilePage extends StatelessWidget {
   void _logout(BuildContext context) async {
     print("logout");
     await auth.signOut();
-    await googleSignIn.signOut();
+    // await googleSignIn.signOut();
+    await FBlogin_a.logOut();
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.clear();

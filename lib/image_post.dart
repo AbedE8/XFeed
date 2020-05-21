@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,7 +10,7 @@ import 'comment_screen.dart';
 import 'package:flare_flutter/flare_actor.dart';
 
 class ImagePost extends StatefulWidget {
-  const ImagePost(
+  ImagePost(
       {this.mediaUrl,
       this.username,
       this.location,
@@ -17,32 +18,48 @@ class ImagePost extends StatefulWidget {
       this.likes,
       this.postId,
       this.ownerId,
-      this.activity});
+      this.activities});
 
-  factory ImagePost.fromDocument(DocumentSnapshot document) {
+  static var users_reference = Firestore.instance.collection('users');
+  static var posts_reference = Firestore.instance.collection('posts');
+
+  static Future<ImagePost> fromDocument(DocumentSnapshot document) async {
+    var userRef = document.data['publisher'];
+    var userData = await users_reference.document(userRef).get();
+    
     return ImagePost(
-      username: document['username'],
-      location: document['location'],
-      mediaUrl: document['mediaUrl'],
-      likes: document['likes'],
-      description: document['description'],
+      username: userData.data['username'],
+      location: document.data['feature_name'],
+      mediaUrl: document.data['img_url'],
+      likes: document.data['likes'],
+      description: document.data['description'],
       postId: document.documentID,
-      ownerId: document['ownerId'],
-      activity: document['activity'],
+      ownerId: document.data['publisher'],
+      activities: document.data['category'],
     );
   }
 
-  factory ImagePost.fromJSON(Map data) {
+  static Future<ImagePost> fromJSON(Map<String, dynamic> data) async {
+    var userRef = data['publisher'];
+    DocumentSnapshot userData = await users_reference.document(userRef).get();
+  
     return ImagePost(
-      username: data['username'],
-      location: data['location'],
-      mediaUrl: data['mediaUrl'],
+      username: userData.data['username'],
+      location: data['feature_name'],
+      mediaUrl: data['img_url'],
       likes: data['likes'],
       description: data['description'],
-      ownerId: data['ownerId'],
-      postId: data['postId'],
-      activity: data['activity'],
+      ownerId: data['publisher'],
+      postId: data['id'],
+      activities: data['category']
+      ,
     );
+  }
+
+  static Future<ImagePost> fromID(String postID) async {
+    DocumentSnapshot postData = await posts_reference.document(postID).get();
+    posts_reference.document(postID).updateData({'views':FieldValue.increment(1)});
+    return await fromDocument(postData);
   }
 
   int getLikeCount(var likes) {
@@ -68,7 +85,7 @@ class ImagePost extends StatefulWidget {
   final likes;
   final String postId;
   final String ownerId;
-  final String activity;
+  final activities;
   _ImagePost createState() => _ImagePost(
         mediaUrl: this.mediaUrl,
         username: this.username,
@@ -78,7 +95,7 @@ class ImagePost extends StatefulWidget {
         likeCount: getLikeCount(this.likes),
         ownerId: this.ownerId,
         postId: this.postId,
-        activity: this.activity,
+        activities: this.activities,
       );
 }
 
@@ -87,7 +104,7 @@ class _ImagePost extends State<ImagePost> {
   final String username;
   final String location;
   final String description;
-  final String activity;
+  final List<dynamic> activities;
   Map likes;
   int likeCount;
   final String postId;
@@ -101,7 +118,7 @@ class _ImagePost extends State<ImagePost> {
     fontWeight: FontWeight.bold,
   );
 
-  var reference = Firestore.instance.collection('insta_posts');
+  var reference = Firestore.instance.collection('posts');
 
   _ImagePost(
       {this.mediaUrl,
@@ -112,7 +129,7 @@ class _ImagePost extends State<ImagePost> {
       this.postId,
       this.likeCount,
       this.ownerId,
-      this.activity});
+      this.activities});
 
   GestureDetector buildLikeIcon() {
     Color color;
@@ -153,9 +170,10 @@ class _ImagePost extends State<ImagePost> {
                   child: Container(
                     width: 100,
                     height: 100,
-                    child:  Opacity(
+                    child: Opacity(
                         opacity: 0.85,
-                        child: FlareActor("assets/flare/Like.flr",
+                        child: FlareActor(
+                          "assets/flare/Like.flr",
                           animation: "Like",
                         )),
                   ),
@@ -172,16 +190,13 @@ class _ImagePost extends State<ImagePost> {
     }
 
     return FutureBuilder(
-        future: Firestore.instance
-            .collection('insta_users')
-            .document(ownerId)
-            .get(),
+        future: Firestore.instance.collection('users').document(ownerId).get(),
         builder: (context, snapshot) {
-
           if (snapshot.data != null) {
             return ListTile(
               leading: CircleAvatar(
-                backgroundImage: CachedNetworkImageProvider(snapshot.data.data['photoUrl']),
+                backgroundImage: CachedNetworkImageProvider(
+                    snapshot.data.data['profile_pic_url']),
                 backgroundColor: Colors.grey,
               ),
               title: GestureDetector(
@@ -192,7 +207,7 @@ class _ImagePost extends State<ImagePost> {
               ),
               subtitle: Text(this.location),
               //trailing: const Icon(Icons.more_vert),
-              trailing: Text(this.activity == null ? "NA":this.activity),
+              trailing: Text(this.activities == null ? "NA" : this.activities.toString()),
             );
           }
 
@@ -208,7 +223,7 @@ class _ImagePost extends State<ImagePost> {
 
   @override
   Widget build(BuildContext context) {
-    liked = (likes[googleSignIn.currentUser.id.toString()] == true);
+    liked = (likes[currentUserModel.id.toString()] == true);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -263,7 +278,7 @@ class _ImagePost extends State<ImagePost> {
   }
 
   void _likePost(String postId2) {
-    var userId = googleSignIn.currentUser.id;
+    var userId = currentUserModel.id;
     bool _liked = likes[userId] == true;
 
     if (_liked) {
@@ -336,7 +351,7 @@ class ImagePostFromId extends StatelessWidget {
 
   getImagePost() async {
     var document =
-        await Firestore.instance.collection('insta_posts').document(id).get();
+        await Firestore.instance.collection('posts').document(id).get();
     return ImagePost.fromDocument(document);
   }
 

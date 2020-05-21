@@ -43,8 +43,7 @@ class _CommentScreenState extends State<CommentScreen> {
     return Column(
       children: [
         Expanded(
-          child:
-            buildComments(),
+          child: buildComments(),
         ),
         Divider(),
         ListTile(
@@ -53,14 +52,17 @@ class _CommentScreenState extends State<CommentScreen> {
             decoration: InputDecoration(labelText: 'Write a comment...'),
             onFieldSubmitted: addComment,
           ),
-          trailing: OutlineButton(onPressed: (){addComment(_commentController.text);}, borderSide: BorderSide.none, child: Text("Post"),),
+          trailing: OutlineButton(
+            onPressed: () {
+              addComment(_commentController.text);
+            },
+            borderSide: BorderSide.none,
+            child: Text("Post"),
+          ),
         ),
-
       ],
     );
-
   }
-
 
   Widget buildComments() {
     return FutureBuilder<List<Comment>>(
@@ -81,7 +83,7 @@ class _CommentScreenState extends State<CommentScreen> {
     List<Comment> comments = [];
 
     QuerySnapshot data = await Firestore.instance
-        .collection("insta_comments")
+        .collection("all_comments")
         .document(postId)
         .collection("comments")
         .getDocuments();
@@ -93,9 +95,13 @@ class _CommentScreenState extends State<CommentScreen> {
   }
 
   addComment(String comment) {
+    if(comment == "")
+    {
+      return;
+    }
     _commentController.clear();
     Firestore.instance
-        .collection("insta_comments")
+        .collection("all_comments")
         .document(postId)
         .collection("comments")
         .add({
@@ -143,7 +149,7 @@ class Comment extends StatelessWidget {
       username: document['username'],
       userId: document['userId'],
       comment: document["comment"],
-      timestamp: document["timestamp"],
+      timestamp: document["timestamp"].toString(),
       avatarUrl: document["avatarUrl"],
     );
   }
