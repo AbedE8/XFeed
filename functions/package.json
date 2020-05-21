@@ -7,10 +7,11 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "localhost": "firebase serve --only functions",
+    "localhost": "firebase serve",
     "build": "tsc",
     "update": "npm i",
-    "relogin": "firebase login --reauth"
+    "relogin": "firebase login --reauth",
+    "emulator": "firebase emulators:start"
   },
   "engines": {
     "node": "8"
@@ -27,7 +28,8 @@
     "geolib": "^3.2.1",
     "geolocator": "^2.1.5",
     "lodash": "^4.17.15",
-    "moment": "^2.25.3"
+    "moment": "^2.25.3",
+    "node-gcm": "^1.0.2"
   },
   "devDependencies": {
     "tslint": "^5.12.0",

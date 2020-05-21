@@ -19,18 +19,21 @@ export const uploadPostModule = function(req, res) {
 	let img_url = req.body.img_url;
 	let latlng = {lat: Number(req.body.lat), lng: Number(req.body.lng)};
 	let timeStamp = new Date(req.body.timestamp);
+	let genders = req.body.genders;
+	let minAgeForDistribution = req.body.min_age;
+	let maxAgeForDistribution = req.body.max_age;
 
 	async function execUploadPost() {
 		let GeoLocationDB = await admin.firestore().collection("geoLocation").where("d.name", "==", feature_name);
 	
 		await GeoLocationDB.get().then(async function(querySnapshot){
-			await insertNewPost(uid, categories, description, img_url, timeStamp, feature_name).then(async function(newPostRef){
+			await insertNewPost(uid, categories, description, img_url, timeStamp, feature_name, genders, minAgeForDistribution, maxAgeForDistribution).then(async function(newPostRef){
 				if (querySnapshot.size == 1){
 					// location exist. add the new post to the location.
 					await querySnapshot.docs[0].ref.set({d:{posts:admin.firestore.FieldValue.arrayUnion({ id: newPostRef.id,
 																																																timeStamp: timeStamp})}}, {merge:true});
 				} else if (querySnapshot.size == 0){
-					// need to add new location with the new post.
+					// add new location with the new post.
 					await geocollection.add({
 							name: feature_name,
 							coordinates: new firebase.firestore.GeoPoint(latlng.lat, latlng.lng),
@@ -48,7 +51,7 @@ export const uploadPostModule = function(req, res) {
 		});
 	}
 
-	async function insertNewPost(i_uid, i_categories, i_description, i_img_url, i_timeStamp, i_feature_name){
+	async function insertNewPost(i_uid, i_categories, i_description, i_img_url, i_timeStamp, i_feature_name, i_genders, i_minAgeForDistribution, i_maxAgeForDistribution){
 		return await admin.firestore().collection("users").doc(i_uid).get()
 		.then( async userRef => {
 			let newPost = {
@@ -57,14 +60,16 @@ export const uploadPostModule = function(req, res) {
 				description: i_description,
 				img_url: i_img_url,
 				timeStamp: i_timeStamp,
-				comments: [],
-				likes: [],
+				likes: {},
 				referred_users: [],
 				distribution: userRef.data().post_distribution,
 				views: 0,
-				feature_name: i_feature_name
+				feature_name: i_feature_name,
+				genders: i_genders,
+				min_age: i_minAgeForDistribution,
+				max_age: i_maxAgeForDistribution
 			};
-	
+			
 			return await DBController.insertDocumentToCollection('posts', newPost, "new post published.").then( newPostRef => {
 				console.log(newPostRef.id);
 				newPostRef.update({
