@@ -56,7 +56,7 @@ class _ActivityFeedPageState extends State<ActivityFeedPage> with AutomaticKeepA
       
       items.add(ActivityFeedItem.fromDocument(doc));
     }
-    return items;
+    return items.reversed.toList();
   }
 
   // ensures state is kept when switching pages

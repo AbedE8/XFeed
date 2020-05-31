@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import "package:google_maps_webservice/places.dart";
 import 'package:autocomplete_textfield/autocomplete_textfield.dart';
 import 'filter_page.dart';
+import 'package:flutter_google_places/flutter_google_places.dart';
 
 class Uploader extends StatefulWidget {
   final File imageFile;
@@ -54,6 +55,9 @@ class _Uploader extends State<Uploader> {
   String currentText = "";
   num _max_return_near_places = 100;
   bool _valideLocation = true;
+  int _placesWithenRadius = 500; //in meters
+  static String kGoogleApiKey = "AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4";
+  GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
   _Uploader({this.file});
   @override
   initState() {
@@ -68,7 +72,7 @@ class _Uploader extends State<Uploader> {
     for (var j = 0; j < _tappedGenders.length; j++) {
       _tappedGenders[j] = true; //on by default
     }
-    _rangeValue = new RangeValues(FilterPosts.minAge, FilterPosts.maxAge);
+    _rangeValue = new RangeValues(FilterPosts.minAge.toDouble(), FilterPosts.maxAge.toDouble());
     _rangeLabels = new RangeLabels(
         FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
     textField = SimpleAutoCompleteTextField(
@@ -87,7 +91,7 @@ class _Uploader extends State<Uploader> {
     );
   }
 
-  updateText(text) {
+  updateText(text) async {
     currentText = text;
     if (validateUserLocationInput(text)) {
       setState(() {
@@ -101,6 +105,32 @@ class _Uploader extends State<Uploader> {
       });
     }
     print("updateText " + text);
+    List<Map<String, dynamic>> data = await fetchDataAutocomplete(text);
+    buildSuggestions(data, 'description');
+  }
+
+  buildSuggestions(List<Map<String, dynamic>> data, String parser) {
+    suggestions.clear();
+    for (var item in data) {
+      if (!suggestions.contains(item[parser])) {
+        print("adding  "+parser + item[parser]);
+        suggestions.add(item[parser]);
+      }
+    }
+    textField.updateSuggestions(suggestions);
+  }
+
+  Future<List<Map<String, dynamic>>> fetchDataAutocomplete(text) async {
+    String url =
+        "https://maps.googleapis.com/maps/api/place/autocomplete/json?" +
+            "input=" + text + //text to be completed
+            "&types=establishment"+
+            "&location=${coordinate.latitude},${coordinate.longitude}"+
+            "&radius=" + _placesWithenRadius.toString() + "&strictbounds"+
+            "&key=" + kGoogleApiKey;
+    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'predictions');
+    print("recieved data length is " + data.length.toString());
+    return data;
   }
 
   bool validateUserLocationInput(String text) {
@@ -132,17 +162,27 @@ class _Uploader extends State<Uploader> {
     Coordinates latling = await getUserCordinate();
     googleNearbyPlaces[coordinate.hashCode] = null;
     coordinate = latling;
-    await getNearlocation();
-
+    // await getNearlocation(); //No need for nearby location due to autocomplete
+    // suggestions.addAll(iterable)
+    await getStreetLocation(latling);
     setState(() {
       address = first;
     });
   }
-
+  getStreetLocation(Coordinates latling) async{
+    String url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=${latling.latitude},${latling.longitude}&result_type=street_address"+
+    "&key=AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4";
+    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'results');
+    print("recieved data length is " + data.length.toString());
+    for (var item in data) {
+      print("formatted addres "+item['formatted_address']);
+    }
+  }
   bool canPost() {
     return (locationTapped &&
         (numTappedCategories > 0) &&
-        (numTappedGenders > 0));
+        (numTappedGenders > 0)) && 
+        !uploading;
   }
 
   Widget build(BuildContext context) {
@@ -176,7 +216,6 @@ class _Uploader extends State<Uploader> {
               descriptionController: descriptionController,
               locationController: locationController,
               loading: uploading,
-              suggestions: suggestions,
             ),
             Divider(), //scroll view where we will show location to users
             ListTile(
@@ -205,7 +244,6 @@ class _Uploader extends State<Uploader> {
                     genders, _tappedGenders, onTappedGender)),
 
             Divider(),
-
             Padding(
               padding: EdgeInsets.all(10),
               child: Text(
@@ -229,8 +267,8 @@ class _Uploader extends State<Uploader> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       RangeSlider(
-                          min: FilterPosts.minAge,
-                          max: FilterPosts.maxAge,
+                          min: FilterPosts.minAge.toDouble(),
+                          max: FilterPosts.maxAge.toDouble(),
                           values: _rangeValue,
                           labels: _rangeLabels,
                           onChanged: (RangeValues values) {
@@ -257,29 +295,29 @@ class _Uploader extends State<Uploader> {
               ],
             ),
             Divider(),
-            Padding(
-              padding: EdgeInsets.all(10),
-              child: Text(
-                "NearBy Places:",
-                style: TextStyle(color: Colors.grey, fontSize: 18),
-              ),
-            ),
-            (address == null)
-                ? Container()
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: EdgeInsets.only(right: 5.0, left: 5.0, top: 5),
-                    child: Container(
-                        child: FutureBuilder<Widget>(
-                      future: buildNearByLocations(),
-                      builder: (BuildContext context,
-                          AsyncSnapshot<Widget> snapshot) {
-                        if (snapshot.hasData) return snapshot.data;
-                        // return Container(child: CircularProgressIndicator());
-                        return Container();
-                      },
-                    )),
-                  ),
+            // Padding(
+            //   padding: EdgeInsets.all(10),
+            //   child: Text(
+            //     "NearBy Places:",
+            //     style: TextStyle(color: Colors.grey, fontSize: 18),
+            //   ),
+            // ),
+            // (address == null)
+            //     ? Container()
+            //     : SingleChildScrollView(
+            //         scrollDirection: Axis.horizontal,
+            //         padding: EdgeInsets.only(right: 5.0, left: 5.0, top: 5),
+            //         child: Container(
+            //             child: FutureBuilder<Widget>(
+            //           future: buildNearByLocations(),
+            //           builder: (BuildContext context,
+            //               AsyncSnapshot<Widget> snapshot) {
+            //             if (snapshot.hasData) return snapshot.data;
+            //             // return Container(child: CircularProgressIndicator());
+            //             return Container();
+            //           },
+            //         )),
+            //       ),
           ],
         ));
   }
@@ -420,34 +458,30 @@ class _Uploader extends State<Uploader> {
     );
   }
 
+  getDataFromUrl(String url, String data_array) async {
+    print("About to send request URL: " + url);
+    final response = await http.get(url);
+    Map<String, dynamic> json_data = json.decode(response.body);
+    List<Map<String, dynamic>> list_data =
+        json_data[data_array].cast<Map<String, dynamic>>();
+    return list_data;
+  }
+
   getNearlocation() async {
     int loc_to_str = coordinate.hashCode;
 
     if (googleNearbyPlaces[loc_to_str] == null) {
       String url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?' +
-          'location=${coordinate.latitude},${coordinate.longitude}&rankby=distance&key=AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4';
-      final response = await http.get(url);
-      Map<String, dynamic> json_data = json.decode(response.body);
-      print("About to send request to google newarby " + url);
-      List<Map<String, dynamic>> list_data =
-          json_data['results'].cast<Map<String, dynamic>>();
+          'location=${coordinate.latitude},${coordinate.longitude}&rankby=distance&key=' +
+          kGoogleApiKey;
+      List<Map<String, dynamic>> list_data = await getDataFromUrl(url,'results');
       googleNearbyPlaces[loc_to_str] = list_data;
     } else {
       print("No need to send request to google");
     }
     List<Map<String, dynamic>> all_places = googleNearbyPlaces[loc_to_str];
+    // buildSuggestions(all_places);
     print("got all_places " + all_places.length.toString());
-    for (var item in all_places) {
-      if (!suggestions.contains(item['name'])) {
-        print("adding name " + item['name']);
-        suggestions.add(item['name']);
-      }
-      if (!suggestions.contains(item['vicinity'])) {
-        print("adding address " + item['vicinity']);
-        suggestions.add(item['vicinity']);
-      }
-    }
-    textField.updateSuggestions(suggestions);
   }
 }
 
@@ -456,19 +490,19 @@ class PostForm extends StatefulWidget {
   final TextEditingController descriptionController;
   final TextEditingController locationController;
   final bool loading;
-  final List<String> suggestions;
+
   _PostForm createState() => _PostForm(
-      this.imageFile,
-      this.descriptionController,
-      this.locationController,
-      this.loading,
-      this.suggestions);
-  PostForm(
-      {this.imageFile,
-      this.descriptionController,
-      this.loading,
-      this.locationController,
-      this.suggestions});
+        this.imageFile,
+        this.descriptionController,
+        this.locationController,
+        this.loading,
+      );
+  PostForm({
+    this.imageFile,
+    this.descriptionController,
+    this.loading,
+    this.locationController,
+  });
 }
 
 class _PostForm extends State<PostForm> {
@@ -476,10 +510,9 @@ class _PostForm extends State<PostForm> {
   final TextEditingController descriptionController;
   final TextEditingController locationController;
   final bool loading;
-  final List<String> suggestions;
   String currentText = "";
   _PostForm(this.imageFile, this.descriptionController, this.locationController,
-      this.loading, this.suggestions);
+      this.loading);
   @override
   void initState() {
     // TODO: implement initState
@@ -491,7 +524,7 @@ class _PostForm extends State<PostForm> {
     return Column(
       children: <Widget>[
         loading
-            ? LinearProgressIndicator()
+            ? CircularProgressIndicator()
             : Padding(padding: EdgeInsets.only(top: 0.0)),
         Divider(),
         Row(
@@ -524,7 +557,6 @@ class _PostForm extends State<PostForm> {
               ),
             ),
           ],
-          
         ),
         // Divider(),
         // ListTile(
@@ -570,13 +602,13 @@ void postToFireStore(
     'img_url': mediaUrl,
     'description': description,
     "uid": currentUserModel.id.toString(),
-    "timestamp": DateTime.now().toString(),
+    "timestamp": DateTime.now().toUtc().toString(),
     "category": activity.toList(),
-    "genders":genders.toList(),
-    "min_age":ageRange.start.toInt(),
-    "max_age":ageRange.end.toInt()
+    "genders": genders.toList(),
+    "min_age": ageRange.start.toInt(),
+    "max_age": ageRange.end.toInt()
   });
-  // print('111111111111');
+  print('upload post with time '+DateTime.now().toUtc().toString());
   // print(req);
   final http.Response response = await http.post(
       'https://us-central1-xfeed-497fe.cloudfunctions.net/uploadPost',

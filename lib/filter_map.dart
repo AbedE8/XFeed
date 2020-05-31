@@ -26,31 +26,27 @@ class _FilterMap extends State<FilterMap> {
   CameraPosition _initPosition;
   Marker pin;
   double radius = 0;
-  double radisInitial;
+  // double radisInitial;
   Set<Marker> markers;
   Set<Circle> circles;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    radisInitial = pref.radious;
+    radius = pref.radious;
     center = new LatLng(pref.location.latitude, pref.location.longitude);
     print("recieved lat " +
         center.latitude.toString() +
         " radius is " +
-        radisInitial.toString() +
-        "user pref is ");
-    setState(() {
-      _initPosition = new CameraPosition(target: center, zoom: 14.5746);
-    });
-
+        radius.toString() +
+        "user pref is 5746");
     markers = new Set.from(
         [new Marker(markerId: MarkerId("asas"), position: center)]);
     circles = new Set.from([
       new Circle(
           circleId: CircleId("1"),
           center: center,
-          radius: radisInitial * 1000,
+          radius: radius * 1000,
           fillColor: Color.fromRGBO(0, 0, 255, 0.2),
           strokeWidth: 1,
           strokeColor: Colors.blue)
@@ -67,15 +63,16 @@ class _FilterMap extends State<FilterMap> {
         children: <Widget>[
           new GoogleMap(
             // 2
-            initialCameraPosition: _initPosition,
+            initialCameraPosition: CameraPosition(target: center, zoom: 11),
             // 3
             mapType: MapType.normal,
+            // myLocationEnabled: true,
             onTap: (pos) {
               Marker m = new Marker(markerId: MarkerId("asas"), position: pos);
               Circle c = new Circle(
                   circleId: CircleId("1"),
                   center: pos,
-                  radius: radisInitial,
+                  radius: radius,
                   fillColor: Color.fromRGBO(0, 0, 255, 0.2),
                   strokeWidth: 1,
                   strokeColor: Colors.blue);
@@ -84,12 +81,18 @@ class _FilterMap extends State<FilterMap> {
                 circles.add(c);
                 // filterController.mapData = new FilterFromMap(pos, radisInitial);
                 filterController.center = pos;
-                filterController.radius = radisInitial;
+                filterController.radius = radius;
               });
             },
             // 4
             onMapCreated: (GoogleMapController controller) {
+              // setState(() {
               _controller.complete(controller);
+              // });
+              // controller.moveCamera(CameraUpdate.newLatLngZoom(center, 11));
+              Future.delayed(Duration(milliseconds: 500)).then((onValue) =>
+                  controller
+                      .moveCamera(CameraUpdate.newLatLngZoom(center, 12)));
             },
             markers: markers,
             circles: circles,
@@ -115,7 +118,7 @@ class _FilterMap extends State<FilterMap> {
                       Circle c = new Circle(
                           circleId: CircleId("1"),
                           center: circles.last.center,
-                          radius: newDis * 1000,
+                          radius: newDis * 500,
                           fillColor: Color.fromRGBO(0, 0, 255, 0.2),
                           strokeWidth: 1,
                           strokeColor: Colors.blue);
@@ -123,7 +126,7 @@ class _FilterMap extends State<FilterMap> {
                       setState(() {
                         circles.add(c);
                         filterController.center = circles.last.center;
-                        filterController.radius = newDis;
+                        filterController.radius = radius;
                         // new FilterFromMap(circles.last.center, newDis);
                       });
                     },
@@ -143,5 +146,4 @@ class FilterMapController {
   double radius;
 
   FilterMapController(this.center, this.radius);
-
 }

@@ -17,7 +17,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePage extends State<ProfilePage>
     with AutomaticKeepAliveClientMixin<ProfilePage> {
   final String profileId;
-  String currentUserId = "1";
+  String currentUserId = currentUserModel.id;
   String view = "grid"; // default view
   bool isFollowing = false;
   bool followButtonClicked = false;
@@ -177,7 +177,9 @@ class _ProfilePage extends State<ProfilePage>
 
     Container buildProfileFollowButton(User user) {
       // viewing your own profile - should show edit button
-
+      if(user.id != currentUserModel.id) {
+        return Container();
+      }
       return buildFollowButton(
         text: "Edit Profile",
         backgroundcolor: Colors.white,
@@ -250,19 +252,19 @@ class _ProfilePage extends State<ProfilePage>
         var snap = await Firestore.instance
             .collection('posts')
             .where("publisher", isEqualTo: profileId)
-            // .orderBy("timestamp",descending: true)
+            .orderBy("timeStamp",descending: true)
             .getDocuments();
         for (var doc in snap.documents) {
-          print("post "+doc.data.toString());
+          // print("post "+doc.data.toString());
           posts.add(await ImagePost.fromDocument(doc));
         }
         // print()
         setState(() {
           postCount = snap.documents.length;
-          print("counts num " + postCount.toString());
+          // print("counts num " + postCount.toString());
         });
 
-        return posts.reversed.toList();
+        return posts.toList();
       }
 
       return Container(

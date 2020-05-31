@@ -114,7 +114,7 @@ class _CommentScreenState extends State<CommentScreen> {
 
     //adds to postOwner's activity feed
     Firestore.instance
-        .collection("insta_a_feed")
+        .collection("activities")
         .document(postOwner)
         .collection("items")
         .add({

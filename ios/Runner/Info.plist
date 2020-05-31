@@ -2,12 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>io.flutter.embedded_views_preview</key>
-	<string>YES</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>FB photo download</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>pla pla pla</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -29,17 +23,37 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.7019780124-8d9k97bo7jd6gn2fdm8pahj260br014j</string>
+				<string>fb276498260007772</string>
 				<string>com.googleusercontent.apps.1011943967139-r6iss60bdmnspjkaqb9vekqabf9dqt49</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>FacebookAppID</key>
+	<string>276498260007772</string>
+	<key>FacebookDisplayName</key>
+	<string>Xfeed</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>fbapi</string>
+		<string>fbapi20130214</string>
+		<string>fbapi20130410</string>
+		<string>fbapi20130702</string>
+		<string>fbapi20131010</string>
+		<string>fbapi20131219</string>
+		<string>fbapi20140410</string>
+		<string>fbapi20140116</string>
+		<string>fbapi20150313</string>
+		<string>fbapi20150629</string>
+		<string>fbapi20160328</string>
+		<string>fbauth</string>
+		<string>fb-messenger-share-api</string>
+		<string>fbauth2</string>
+		<string>fbshareextension</string>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
@@ -48,8 +62,15 @@
 	<string>Your location required to post </string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location required to post</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>pla pla pla</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Used to allow the user to select a photo to upload as a post</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>processing</string>
+		<string>remote-notification</string>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -73,38 +94,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-  <key>CFBundleURLSchemes</key>
-  <array>
-    <string>fb276498260007772</string>
-  </array>
-  </dict>
-</array>
-<key>FacebookAppID</key>
-<string>276498260007772</string>
-<key>FacebookDisplayName</key>
-<string>Xfeed</string>
-
-<key>LSApplicationQueriesSchemes</key>
-<array>
-  <string>fbapi</string>
-  <string>fbapi20130214</string>
-  <string>fbapi20130410</string>
-  <string>fbapi20130702</string>
-  <string>fbapi20131010</string>
-  <string>fbapi20131219</string>
-  <string>fbapi20140410</string>
-  <string>fbapi20140116</string>
-  <string>fbapi20150313</string>
-  <string>fbapi20150629</string>
-  <string>fbapi20160328</string>
-  <string>fbauth</string>
-  <string>fb-messenger-share-api</string>
-  <string>fbauth2</string>
-  <string>fbshareextension</string>
-</array>
+	<key>io.flutter.embedded_views_preview</key>
+	<string>YES</string>
 </dict>
 </plist>

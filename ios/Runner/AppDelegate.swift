@@ -10,9 +10,16 @@ import GoogleMaps
   ) -> Bool {
     GMSServices.provideAPIKey("AIzaSyD8TDpgqTxyKLXO2zOUv-FTRWIpqjRuyKA")
     GeneratedPluginRegistrant.register(with: self)
+   //if #available(iOS 10.0, *) {
+    UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+  //}
     // [GeneratedPluginRegistrant registerWithRegistry:self];
     // [GMSServices provideAPIKey:@"{{AIzaSyD8TDpgqTxyKLXO2zOUv-FTRWIpqjRuyKA}}"];
     
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+// if #available(iOS 10.0, *) {
+  // UNUserNotificationCenter.current().delegate = self as? UNUserNotificationCenterDelegate
+// }
 }

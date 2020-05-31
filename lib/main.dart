@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:path/path.dart' as Path;
 import 'package:Xfeedm/categories.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -160,7 +160,9 @@ Future<Null> _setUpNotifications() async {
     });
   }
   if (Platform.isIOS) iOS_Permission();
-
+  
+  
+  // _firebaseMessaging.requestNotificationPermissions();
   _firebaseMessaging.getToken().then((token) {
     print("token is " + token);
     Firestore.instance
@@ -243,7 +245,7 @@ Future<void> tryCreateUserRecord(BuildContext context) async {
 }
 
 Future<String> _downloadImage(
-    String photoURL, String uid, var httpClient) async {
+    String photoURL, String uid) async {
   // var httpClient = HttpClient();
   // var req = await httpClient.getUrl(Uri.parse(photoURL));
   // var _dir = (await getApplicationDocumentsDirectory()).path;
@@ -262,11 +264,18 @@ Future<String> _downloadImage(
   print("19191919191991919191919199191 " + path.toString());
   // String image_path =  await uploadImage(file);
   // var uuid = Uuid().v1();
-  StorageReference ref =
-      FirebaseStorage.instance.ref().child("usersImages").child("$uid.jpg");
-  StorageUploadTask uploadTask = ref.putFile(file);
+  var usersImages = FirebaseStorage.instance.ref().child("profilePic/${uid}.jpg");
+  var metadata = StorageMetadata(contentType: "image/jpeg");
+  // var storegRef = FirebaseStorage.instance.ref();
+// var mountainsRef = storegRef.child("$uid.jpg");
 
-  String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
+  // StorageReference ref =
+  //     FirebaseStorage.instance.ref().child("profilePic/pic_$uid.jpg");
+  StorageUploadTask uploadTask =  usersImages.putFile(file);
+StorageTaskSnapshot taskSnapshot= await uploadTask.onComplete;
+  // String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
+  String downloadUrl = await taskSnapshot.ref.getDownloadURL();
+  print("imageUrl after uploading is "+downloadUrl);
   return downloadUrl;
   // print("image file downloaded and located at"+image_path);
   // return image_path;
@@ -356,11 +365,13 @@ Future<void> tryCreateUserRecordFB(BuildContext context) async {
           await users_ref.document(user_data['id']).get();
       if (userRecord.data == null) {
         print("no user record exists, time to create");
-        // String nickname = await getNickname(context);
+        String userName = await getNickname(context);
         // print("nickname is "+nickname);
-        // String profilePic = await _downloadImage(photo_FB_URL, user_data['id'], httpClient);
-        String userName = user_data['name']; //see getnickname
         await createNewUser(user_data, photo_FB_URL, userName);
+        
+       // await _downloadImage(photo_FB_URL,user_data['id']);
+        // String userName = user_data['name']; //see getnickname
+        
         userRecord = await users_ref.document(user_data['id']).get();
       } else {
         //TODO : download user photo once registered and upload it

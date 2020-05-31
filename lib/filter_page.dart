@@ -11,8 +11,8 @@ class FilterPosts extends StatefulWidget {
   // method of the State. Fields in a Widget subclass are always marked "final".
   FilterPosts(this.pref);
   final UserPreference pref;
-  static final double minAge = 18;
-  static final double maxAge = 70;
+  static final int minAge = 18;
+  static final int maxAge = 70;
   @override
   _Filter createState() => new _Filter(this.pref);
 }
@@ -23,17 +23,12 @@ class _Filter extends State<FilterPosts> {
   List<FeedCategory> categories = FeedCategory.categories;
   List<FeedCategory> genders = FeedCategory.genders;
   RangeValues _rangeValue;
-  RangeLabels _rangeLabels = new RangeLabels(
-      FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
-  int _ageStart = FilterPosts.minAge.toInt();
-  int _ageEnd = FilterPosts.maxAge.toInt();
+  RangeLabels _rangeLabels;
   final UserPreference userPref;
   FilterMapController _filterMapController =
       new FilterMapController(null, null);
   List<bool> _tappedCategory;
   List<String> _chosedCategories;
-  // List<bool> _tappedGender;
-  // List<String> _chosedGenders;
   @override
   Future<void> initState() {
     super.initState();
@@ -49,27 +44,10 @@ class _Filter extends State<FilterPosts> {
               : true;
     }
     _chosedCategories = new List.from(userPref.categories);
-    // _tappedGender = new List(genders.length);
-    // for (var i = 0; i < genders.length; i++) {
-    //   _tappedGender[i] =
-    //       userPref.gender.indexOf(genders[i].getName()) == -1 ? false : true;
-    // }
-    // _chosedGenders = new List.from(userPref.gender);
+   _rangeLabels = new RangeLabels(
+      userPref.min_age.toInt().toString(), userPref.max_age.toInt().toString());
   }
 
-  // onTappedGender(bool newValue, int index) {
-  //   if (!newValue) {
-  //     setState(() {
-  //       _tappedGender[index] = newValue;
-  //       _chosedGenders.remove(genders[index].getName());
-  //     });
-  //   } else {
-  //     setState(() {
-  //       _tappedGender[index] = newValue;
-  //       _chosedGenders.add(genders[index].getName());
-  //     });
-  //   }
-  // }
 
   onTappedCategory(bool newValue, int index) {
     if (!newValue) {
@@ -105,7 +83,6 @@ class _Filter extends State<FilterPosts> {
           categories: _chosedCategories,
           min_age: _rangeValue.start.toInt(),
           max_age: _rangeValue.end.toInt(),
-          // gender: _chosedGenders,
           location: point,
           radious: radius);
     }
@@ -156,21 +133,18 @@ class _Filter extends State<FilterPosts> {
             // Padding(
             //   padding: EdgeInsets.all(5),
             // ),
-            Column(
-              children: <Widget>[],
-            ),
             Row(
               children: <Widget>[
                 Expanded(
                   flex: 1,
                   child: Padding(
-                      child: Text("$_ageStart"),
+                      child: Text("${_rangeLabels.start}"),
                       padding: EdgeInsets.only(
                         left: 18,
                       )),
                 ),
                 Expanded(
-                  flex: 9,
+                  flex: 8,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
@@ -182,18 +156,16 @@ class _Filter extends State<FilterPosts> {
                         ),
                       ),
                       RangeSlider(
-                          min: FilterPosts.minAge,
-                          max: FilterPosts.maxAge,
+                          min: FilterPosts.minAge.toDouble(),
+                          max: FilterPosts.maxAge.toDouble(),
                           values: _rangeValue,
                           labels: _rangeLabels,
                           onChanged: (RangeValues values) {
                             setState(() {
                               _rangeValue = values;
                               _rangeLabels = new RangeLabels(
-                                  values.start.toString(),
-                                  values.end.toString());
-                              _ageStart = values.start.toInt();
-                              _ageEnd = values.end.toInt();
+                                  values.start.toInt().toString(),
+                                  values.end.toInt().toString());
                             });
                           }),
                     ],
@@ -202,7 +174,7 @@ class _Filter extends State<FilterPosts> {
                 Expanded(
                   flex: 1,
                   child: Padding(
-                      child: Text("$_ageEnd"),
+                      child: Text("${_rangeLabels.end}"),
                       padding: EdgeInsets.only(
                         right: 16,
                       )),
@@ -210,9 +182,10 @@ class _Filter extends State<FilterPosts> {
               ],
             ),
             Padding(
-              padding: EdgeInsets.only(bottom: 10),
+              padding: EdgeInsets.all( 10),
             )
           ],
         ));
   }
+
 }

@@ -27,10 +27,20 @@ getUserLocation() async {
   }
   final coordinates = Coordinates(
       currentLocation.latitude, currentLocation.longitude);
-  var addresses =
-      await Geocoder.local.findAddressesFromCoordinates(coordinates);
-  var first = addresses.first;
-  return first;
+  // var addresses =
+  //     await Geocoder.local.findAddressesFromCoordinates(coordinates);
+  // var addresses = await Geocoder.google("AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4").findAddressesFromCoordinates(coordinates);
+  //List<Placemark> placemark = await Geolocator().placemarkFromCoordinates(currentLocation.latitude, currentLocation.longitude);
+  print("current location lat "+currentLocation.latitude.toString()+" long " +currentLocation.longitude.toString());
+  // for (var item in addresses) {
+  //   print("address is "+item.featureName);
+  //   print("address is "+item.locality);
+  //   // print("address is "+item.subLocality);
+  //   // print("address is "+item.subAdminArea);
+  //   // print("address is "+item.featureName);
+  // }
+  // var first = addresses.first;
+  return null;
 }
  getUserCordinate() async {
   LocationData currentLocation;

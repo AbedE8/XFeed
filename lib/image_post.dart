@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,47 +20,84 @@ class ImagePost extends StatefulWidget {
       this.likes,
       this.postId,
       this.ownerId,
-      this.activities});
+      this.activities,
+      this.timeStr});
 
   static var users_reference = Firestore.instance.collection('users');
   static var posts_reference = Firestore.instance.collection('posts');
 
+  static String timePassed(Duration duration) {
+    String suffix = " a go";
+
+
+    if (duration.inDays != 0) {
+      return duration.inDays.toString() + " days" + suffix;
+    }
+    if (duration.inHours != 0) {
+      return duration.inHours.toString() + " hours" + suffix;
+    }
+    if (duration.inMinutes != 0) {
+      return duration.inMinutes.toString() + " mins" + suffix;
+    }
+  }
+
+  static DateTime fromTimestamp(int seconds, int nanoseconds) {
+    // var test = data.cast
+    double nanotomilli = (nanoseconds / 1000000);
+    double timeInMilli = (seconds * 1000) + nanotomilli;
+    DateTime postTime = DateTime.fromMillisecondsSinceEpoch(timeInMilli.toInt());
+    return postTime;
+  }
+
   static Future<ImagePost> fromDocument(DocumentSnapshot document) async {
     var userRef = document.data['publisher'];
     var userData = await users_reference.document(userRef).get();
-    
+    DateTime postTime = document.data['timeStamp'].toDate();
+    // DateTime postTime = DateTime.now();
+    // print("creating image of time default"+postTime.toString());
+    // print("creating image of time utc"+postTime.toUtc().toString());
+    // print("creating image of time local"+postTime.toLocal().toString());
+    // print("date now is "+DateTime.now().toString() +" post time utc"+ postTime.toUtc().toString());
+    Duration differ = DateTime.now().difference(postTime.toUtc());
     return ImagePost(
-      username: userData.data['username'],
-      location: document.data['feature_name'],
-      mediaUrl: document.data['img_url'],
-      likes: document.data['likes'],
-      description: document.data['description'],
-      postId: document.documentID,
-      ownerId: document.data['publisher'],
-      activities: document.data['category'],
-    );
+        username: userData.data['username'],
+        location: document.data['feature_name'],
+        mediaUrl: document.data['img_url'],
+        likes: document.data['likes'],
+        description: document.data['description'],
+        postId: document.documentID,
+        ownerId: document.data['publisher'],
+        activities: document.data['category'],
+        timeStr: timePassed(differ));
   }
 
   static Future<ImagePost> fromJSON(Map<String, dynamic> data) async {
     var userRef = data['publisher'];
     DocumentSnapshot userData = await users_reference.document(userRef).get();
-  
+
+    int seconds = data['timeStamp']['_seconds'];
+    int nano = data['timeStamp']['_nanoseconds'];
+
+    DateTime postTime = fromTimestamp(seconds, nano);
+    Duration differ = DateTime.now().difference(postTime);
+
     return ImagePost(
-      username: userData.data['username'],
-      location: data['feature_name'],
-      mediaUrl: data['img_url'],
-      likes: data['likes'],
-      description: data['description'],
-      ownerId: data['publisher'],
-      postId: data['id'],
-      activities: data['category']
-      ,
-    );
+        username: userData.data['username'],
+        location: data['feature_name'],
+        mediaUrl: data['img_url'],
+        likes: data['likes'],
+        description: data['description'],
+        ownerId: data['publisher'],
+        postId: data['id'],
+        activities: data['category'],
+        timeStr: timePassed(differ));
   }
 
   static Future<ImagePost> fromID(String postID) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
-    posts_reference.document(postID).updateData({'views':FieldValue.increment(1)});
+    posts_reference
+        .document(postID)
+        .updateData({'views': FieldValue.increment(1)});
     return await fromDocument(postData);
   }
 
@@ -82,21 +121,22 @@ class ImagePost extends StatefulWidget {
   final String username;
   final String location;
   final String description;
+  final String timeStr;
   final likes;
   final String postId;
   final String ownerId;
   final activities;
   _ImagePost createState() => _ImagePost(
-        mediaUrl: this.mediaUrl,
-        username: this.username,
-        location: this.location,
-        description: this.description,
-        likes: this.likes,
-        likeCount: getLikeCount(this.likes),
-        ownerId: this.ownerId,
-        postId: this.postId,
-        activities: this.activities,
-      );
+      mediaUrl: this.mediaUrl,
+      username: this.username,
+      location: this.location,
+      description: this.description,
+      likes: this.likes,
+      likeCount: getLikeCount(this.likes),
+      ownerId: this.ownerId,
+      postId: this.postId,
+      activities: this.activities,
+      timeStr: timeStr);
 }
 
 class _ImagePost extends State<ImagePost> {
@@ -105,6 +145,7 @@ class _ImagePost extends State<ImagePost> {
   final String location;
   final String description;
   final List<dynamic> activities;
+  final String timeStr;
   Map likes;
   int likeCount;
   final String postId;
@@ -129,7 +170,8 @@ class _ImagePost extends State<ImagePost> {
       this.postId,
       this.likeCount,
       this.ownerId,
-      this.activities});
+      this.activities,
+      this.timeStr});
 
   GestureDetector buildLikeIcon() {
     Color color;
@@ -207,7 +249,8 @@ class _ImagePost extends State<ImagePost> {
               ),
               subtitle: Text(this.location),
               //trailing: const Icon(Icons.more_vert),
-              trailing: Text(this.activities == null ? "NA" : this.activities.toString()),
+              trailing: Text(
+                  this.activities == null ? "NA" : this.activities.toString()),
             );
           }
 
@@ -272,7 +315,18 @@ class _ImagePost extends State<ImagePost> {
                 )),
             Expanded(child: Text(description)),
           ],
-        )
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Container(
+                margin: const EdgeInsets.fromLTRB(20, 5, 0, 5),
+                child: Text(
+                  "$timeStr ",
+                  
+                )),
+          ],
+        ),
       ],
     );
   }
@@ -319,7 +373,7 @@ class _ImagePost extends State<ImagePost> {
 
   void addActivityFeedItem() {
     Firestore.instance
-        .collection("insta_a_feed")
+        .collection("activities")
         .document(ownerId)
         .collection("items")
         .document(postId)
@@ -336,7 +390,7 @@ class _ImagePost extends State<ImagePost> {
 
   void removeActivityFeedItem() {
     Firestore.instance
-        .collection("insta_a_feed")
+        .collection("activities")
         .document(ownerId)
         .collection("items")
         .document(postId)

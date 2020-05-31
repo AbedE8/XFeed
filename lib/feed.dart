@@ -1,3 +1,4 @@
+import 'package:Xfeedm/feed_list_view.dart';
 import 'package:Xfeedm/models/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,7 @@ class Feed extends StatefulWidget {
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
   UserPreference filterData = null;
+  List<String> feedPostsID = [];
   Coordinates cordinate;
   @override
   void initState() {
@@ -25,18 +27,20 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     this._loadFeed();
     initLocation();
   }
-  initLocation () async {
-   Coordinates cordinate_1 = await getUserCordinate();
+
+  initLocation() async {
+    Coordinates cordinate_1 = await getUserCordinate();
     setState(() {
       cordinate = cordinate_1;
     });
   }
+
   buildFeed() {
     if (feedData != null) {
-      return ListView(
-        children: feedData,
-      );
-      
+      return FeedListView(posts: feedData,postsID: feedPostsID);
+      // return ListView(
+      //   children: feedData,
+      // );
     } else {
       return Container(
           alignment: FractionalOffset.center,
@@ -62,13 +66,17 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
                 Icons.filter,
               ),
               onPressed: () async {
-                filterData = await Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => FilterPosts(currentUserModel.preferences)))
+                filterData = await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                FilterPosts(currentUserModel.preferences)))
                     as UserPreference;
-                print("back from filter page "+filterData.toString());
+                print("back from filter page " + filterData.toString());
                 if (filterData != null) {
                   setState(() {
-                    feedData = null; //should set feedData to null in order to stop showing same old feed
+                    feedData =
+                        null; //should set feedData to null in order to stop showing same old feed
                   });
                   await _updateUserPreference();
                   _getFeed();
@@ -78,30 +86,32 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
           },
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _refresh,
-        child: feedData != null ? ListView.builder(itemBuilder: (context,index){
-          return feedData[index];
-        } ,itemCount: feedData.length): Text(""),/*buildFeed(),*/
-      ),
+      body: RefreshIndicator(onRefresh: _refresh, child: buildFeed()
+          // child: feedData != null ? ListView.builder(itemBuilder: (context,index){
+          //   return feedData[index];
+          // } ,itemCount: feedData.length): Text(""),/*buildFeed(),*/
+          ),
     );
   }
-  _updateUserPreference() async{
-    if (filterData == null){
+
+  _updateUserPreference() async {
+    if (filterData == null) {
       return;
     }
     await Firestore.instance
-    .collection("post_preferences")
-    .document(currentUserModel.id).setData({
-      "categories":filterData.categories,
-      "radius":filterData.radious,
-      "location":filterData.location,
-      "min_age":filterData.min_age,
-      "max_age":filterData.max_age
+        .collection("post_preferences")
+        .document(currentUserModel.id)
+        .setData({
+      "categories": filterData.categories,
+      "radius": filterData.radious,
+      "location": filterData.location,
+      "min_age": filterData.min_age,
+      "max_age": filterData.max_age
     });
     //need to update currentUserModel because of post preferences change
     updateCurrentUser(currentUserModel, filterData);
   }
+
   Future<Null> _refresh() async {
     print("asked for refresh give him more ");
     await _getFeed();
@@ -112,21 +122,45 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   }
 
   _loadFeed() async {
-
-      _getFeed();
+    _getFeed();
   }
-  
+
   bool validate(Map<String, dynamic> data) {
     int num_of_posts = data['num_of_posts'];
-    if(num_of_posts == 0)
-    {
+    if (num_of_posts == 0) {
       return false;
-    }
-    else{
+    } else {
       return true;
     }
-    
   }
+Future<List<String>> _fetchAllPostsForTest() async {
+  var snap = await Firestore.instance
+            .collection('posts')
+            .getDocuments();
+  List<String> postsIds = new List();
+  for (var item in snap.documents) {
+    postsIds.add(item.documentID);
+  }
+  return postsIds;
+}
+  Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json) async {
+    int num_of_posts = data_in_json['num_of_posts'];
+    List<Map<String, dynamic>> posts =
+        data_in_json['posts'].cast<Map<String, dynamic>>();
+     List<ImagePost> listOfPosts = [];
+     List<String> listOfPostsId = [];
+    var i;
+
+    for (i = 0; i < num_of_posts; i++) {
+      listOfPosts.add(await ImagePost.fromJSON(posts[i]));
+    }
+    for (var j = i; j < posts.length; j++) {
+      listOfPostsId.add(posts[j]['post_id']);
+    }
+
+    return {'posts':listOfPosts,'postsId':listOfPostsId};
+  }
+
   _getFeed() async {
     print("Staring getFeed");
 
@@ -134,12 +168,15 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
 
     String userId = currentUserModel.id.toString();
 
-    var url = 'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' + userId;
-    
-    print("url is "+url);
+    var url =
+        'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' +
+            userId;
+
+    print("url is " + url);
     var httpClient = HttpClient();
 
     List<ImagePost> listOfPosts;
+    List<String> postsID;
     String result;
     try {
       var request = await httpClient.getUrl(Uri.parse(url));
@@ -147,21 +184,23 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
       if (response.statusCode == HttpStatus.ok) {
         String json = await response.transform(utf8.decoder).join();
         prefs.setString("feed", json);
-        print("json is "+json);
+        print("json is " + json);
 
         Map<String, dynamic> data_in_json = jsonDecode(json);
-        print("num_of_posts "+data_in_json['num_of_posts'].toString());
-        List<Map<String, dynamic>> data = data_in_json['posts'].cast<Map<String, dynamic>>();
-        if (validate(data_in_json) == true){
-          int num_of_posts = data_in_json['num_of_posts'];
-          listOfPosts = await _generateFeed(data, num_of_posts);
+        print("num_of_posts " + data_in_json['num_of_posts'].toString());
+        List<Map<String, dynamic>> data =
+            data_in_json['posts'].cast<Map<String, dynamic>>();
+        if (validate(data_in_json) == true) {
+          Map<String,dynamic> parsedFeed = await parseFeedFromJson(data_in_json);
+          // listOfPosts = await _generateFeed(data, num_of_posts);
+          listOfPosts = parsedFeed['posts'];
+          postsID = parsedFeed['postsId'];
+          //List<String> ids = await _fetchAllPostsForTest();
+          //postsID.addAll(ids);
 
-        }
-        else{
+        } else {
           print("data from server failed in validation");
         }
-        //String post_id = data[1]['post_id'];
-        //print("list is "+post_id)
         result = "Success in http request for feed";
       } else {
         result =
@@ -175,19 +214,21 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     setState(() {
       feedData = listOfPosts;
       filterData = null;
+      feedPostsID = postsID;
     });
   }
 
-  Future<List<ImagePost>> _generateFeed(List<Map<String, dynamic>> feedData, int num_of_posts) async {
+  Future<List<ImagePost>> _generateFeed(
+      List<Map<String, dynamic>> feedData, int num_of_posts) async {
     List<ImagePost> listOfPosts = [];
-    var i ;
+    var i;
 
-    for ( i = 0; i < num_of_posts; i++) {
+    for (i = 0; i < num_of_posts; i++) {
       listOfPosts.add(await ImagePost.fromJSON(feedData[i]));
     }
     for (var j = i; j < feedData.length; j++) {
       listOfPosts.add(await ImagePost.fromID(feedData[j]['post_id']));
-    } 
+    }
 
     return listOfPosts;
   }
