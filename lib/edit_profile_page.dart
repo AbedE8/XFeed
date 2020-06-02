@@ -121,14 +121,15 @@ class EditProfilePage extends StatelessWidget {
   void _logout(BuildContext context) async {
     print("logout");
     await auth.signOut();
-    // await googleSignIn.signOut();
     await FBlogin_a.logOut();
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // await prefs.clear();
     currentUserModel = null;
-
-    Navigator.pop(context);
+    // Navigator.pop(context);
+    Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => HomePage()),
+  );
   }
 }

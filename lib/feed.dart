@@ -20,6 +20,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
   UserPreference filterData = null;
   List<String> feedPostsID = [];
+  double num_of_return_posts = -1; //the initial value because at the beggining we dont now the num of posts
   Coordinates cordinate;
   @override
   void initState() {
@@ -36,11 +37,12 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   }
 
   buildFeed() {
-    if (feedData != null) {
-      return FeedListView(posts: feedData,postsID: feedPostsID);
-      // return ListView(
-      //   children: feedData,
-      // );
+    if (num_of_return_posts == 0) {
+      return Container(
+          alignment: FractionalOffset.center,
+          child: Text("No posts to show",style: TextStyle(fontSize:20)));
+    } else if (feedData != null) {
+      return FeedListView(posts: feedData, postsID: feedPostsID);
     } else {
       return Container(
           alignment: FractionalOffset.center,
@@ -77,6 +79,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
                   setState(() {
                     feedData =
                         null; //should set feedData to null in order to stop showing same old feed
+                    num_of_return_posts = -1;
                   });
                   await _updateUserPreference();
                   _getFeed();
@@ -126,29 +129,31 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   }
 
   bool validate(Map<String, dynamic> data) {
-    int num_of_posts = data['num_of_posts'];
-    if (num_of_posts == 0) {
+    
+    if (!data.containsKey('num_of_posts')) {
+      
       return false;
     } else {
       return true;
     }
   }
-Future<List<String>> _fetchAllPostsForTest() async {
-  var snap = await Firestore.instance
-            .collection('posts')
-            .getDocuments();
-  List<String> postsIds = new List();
-  for (var item in snap.documents) {
-    postsIds.add(item.documentID);
+
+  Future<List<String>> _fetchAllPostsForTest() async {
+    var snap = await Firestore.instance.collection('posts').getDocuments();
+    List<String> postsIds = new List();
+    for (var item in snap.documents) {
+      postsIds.add(item.documentID);
+    }
+    return postsIds;
   }
-  return postsIds;
-}
-  Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json) async {
+
+  Future<Map<String, dynamic>> parseFeedFromJson(
+      Map<String, dynamic> data_in_json) async {
     int num_of_posts = data_in_json['num_of_posts'];
     List<Map<String, dynamic>> posts =
         data_in_json['posts'].cast<Map<String, dynamic>>();
-     List<ImagePost> listOfPosts = [];
-     List<String> listOfPostsId = [];
+    List<ImagePost> listOfPosts = [];
+    List<String> listOfPostsId = [];
     var i;
 
     for (i = 0; i < num_of_posts; i++) {
@@ -158,7 +163,7 @@ Future<List<String>> _fetchAllPostsForTest() async {
       listOfPostsId.add(posts[j]['post_id']);
     }
 
-    return {'posts':listOfPosts,'postsId':listOfPostsId};
+    return {'posts': listOfPosts, 'postsId': listOfPostsId};
   }
 
   _getFeed() async {
@@ -178,6 +183,7 @@ Future<List<String>> _fetchAllPostsForTest() async {
     List<ImagePost> listOfPosts;
     List<String> postsID;
     String result;
+    int num_of_posts;
     try {
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
@@ -191,13 +197,14 @@ Future<List<String>> _fetchAllPostsForTest() async {
         List<Map<String, dynamic>> data =
             data_in_json['posts'].cast<Map<String, dynamic>>();
         if (validate(data_in_json) == true) {
-          Map<String,dynamic> parsedFeed = await parseFeedFromJson(data_in_json);
-          // listOfPosts = await _generateFeed(data, num_of_posts);
+          Map<String, dynamic> parsedFeed =
+              await parseFeedFromJson(data_in_json);
+           num_of_posts = data_in_json['num_of_posts'];
           listOfPosts = parsedFeed['posts'];
           postsID = parsedFeed['postsId'];
           //List<String> ids = await _fetchAllPostsForTest();
           //postsID.addAll(ids);
-
+          
         } else {
           print("data from server failed in validation");
         }
@@ -212,6 +219,7 @@ Future<List<String>> _fetchAllPostsForTest() async {
     print(result);
 
     setState(() {
+      num_of_return_posts = num_of_posts.toDouble();
       feedData = listOfPosts;
       filterData = null;
       feedPostsID = postsID;

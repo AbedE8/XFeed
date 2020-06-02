@@ -58,6 +58,7 @@ class _Uploader extends State<Uploader> {
   int _placesWithenRadius = 500; //in meters
   static String kGoogleApiKey = "AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4";
   GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
+  List<String> _streetAddresses;
   _Uploader({this.file});
   @override
   initState() {
@@ -75,6 +76,7 @@ class _Uploader extends State<Uploader> {
     _rangeValue = new RangeValues(FilterPosts.minAge.toDouble(), FilterPosts.maxAge.toDouble());
     _rangeLabels = new RangeLabels(
         FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
+    _streetAddresses = new List();
     textField = SimpleAutoCompleteTextField(
       key: autoCompleteKey,
       decoration: new InputDecoration(
@@ -91,7 +93,7 @@ class _Uploader extends State<Uploader> {
     );
   }
 
-  updateText(text) async {
+  updateText(String text) async {
     currentText = text;
     if (validateUserLocationInput(text)) {
       setState(() {
@@ -105,18 +107,25 @@ class _Uploader extends State<Uploader> {
       });
     }
     print("updateText " + text);
-    List<Map<String, dynamic>> data = await fetchDataAutocomplete(text);
-    buildSuggestions(data, 'description');
+    if(text != ""){
+      List<Map<String, dynamic>> data = await fetchDataAutocomplete(text);
+      buildSuggestions(data, 'description');
+    }else{
+      suggestions.clear();
+      textField.updateSuggestions(suggestions);
+    }
+
   }
 
   buildSuggestions(List<Map<String, dynamic>> data, String parser) {
     suggestions.clear();
     for (var item in data) {
-      if (!suggestions.contains(item[parser])) {
+      if (item.containsKey(parser) && !suggestions.contains(item[parser]) ) {
         print("adding  "+parser + item[parser]);
         suggestions.add(item[parser]);
       }
     }
+    suggestions.addAll(_streetAddresses);
     textField.updateSuggestions(suggestions);
   }
 
@@ -170,12 +179,18 @@ class _Uploader extends State<Uploader> {
     });
   }
   getStreetLocation(Coordinates latling) async{
-    String url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=${latling.latitude},${latling.longitude}&result_type=street_address"+
-    "&key=AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4";
+    String url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=${latling.latitude},${latling.longitude}"+
+    "&result_type=street_address"+
+    "&key="+kGoogleApiKey;
     List<Map<String, dynamic>> data = await getDataFromUrl(url, 'results');
     print("recieved data length is " + data.length.toString());
     for (var item in data) {
-      print("formatted addres "+item['formatted_address']);
+      // print("formatted addres "+item['formatted_address']);
+      if(item.containsKey('formatted_address')){
+        print("adding formatted addres "+item['formatted_address']);
+        _streetAddresses.add(item['formatted_address']);
+      }
+        
     }
   }
   bool canPost() {

@@ -46,33 +46,10 @@ Future<void> main() async {
   runApp(Fluttergram());
 }
 
-Future<Null> _ensureLoggedIn(BuildContext context) async {
-  GoogleSignInAccount user = googleSignIn.currentUser;
-  if (user == null) {
-    user = await googleSignIn.signInSilently();
-  }
-  if (user == null) {
-    await googleSignIn.signIn();
-    await tryCreateUserRecord(context);
-  }
-
-  if (await auth.currentUser() == null) {
-    final GoogleSignInAccount googleUser = await googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-
-    final AuthCredential credential = GoogleAuthProvider.getCredential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    await auth.signInWithCredential(credential);
-  }
-}
-
-Future<Null> _ensureFBLoggedIn(BuildContext context) async {
+Future<DocumentSnapshot> _ensureFBLoggedIn(BuildContext context) async {
   FacebookLoginResult facebookLoginResult =
       await FBlogin_a.logIn(['email', 'user_gender', 'user_birthday']);
+  DocumentSnapshot userRecordReturn = null;
   switch (facebookLoginResult.status) {
     case FacebookLoginStatus.cancelledByUser:
       print("Cancelled");
@@ -86,42 +63,20 @@ Future<Null> _ensureFBLoggedIn(BuildContext context) async {
       final facebookAuthCred =
           FacebookAuthProvider.getCredential(accessToken: accessToken);
       final user = await auth.signInWithCredential(facebookAuthCred);
-      await tryCreateUserRecordFB(context);
-      print("User : " + user.toString());
+      userRecordReturn = await tryCreateUserRecordFB(context);
+
+      // print("UserRecord : " +;
       break;
   }
+  return userRecordReturn;
 }
 
-Future<Null> _silentLogin(BuildContext context) async {
-  GoogleSignInAccount user = googleSignIn.currentUser;
-
-  if (user == null) {
-    user = await googleSignIn.signInSilently();
-    await tryCreateUserRecord(context);
-  }
-
-  if (await auth.currentUser() == null && user != null) {
-    final GoogleSignInAccount googleUser = await googleSignIn.signIn();
-    final GoogleSignInAuthentication googleAuth =
-        await googleUser.authentication;
-
-    final AuthCredential credential = GoogleAuthProvider.getCredential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
-
-    await auth.signInWithCredential(credential);
-  }
-}
-
-Future<Null> _silentFBLogin(BuildContext context) async {
+Future<DocumentSnapshot> _silentFBLogin(BuildContext context) async {
   FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
-
+  DocumentSnapshot userRecordReturn = null;
   if (accessToken == null) {
-    // user = await googleSignIn.signInSilently();
-    // await tryCreateUserRecord(context);
     print("No access token should register");
-    return;
+    return userRecordReturn;
   } else {
     print("access token is valid");
   }
@@ -133,42 +88,20 @@ Future<Null> _silentFBLogin(BuildContext context) async {
         FacebookAuthProvider.getCredential(accessToken: accessToken.token);
     await auth.signInWithCredential(facebookAuthCred);
   }
-  await tryCreateUserRecordFB(context);
+  userRecordReturn = await tryCreateUserRecordFB(context);
+  return userRecordReturn;
 }
 
 Future<Null> _setUpNotifications() async {
-  if (Platform.isAndroid) {
-    _firebaseMessaging.configure(
-      onMessage: (Map<String, dynamic> message) async {
-        print('on message $message');
-      },
-      onResume: (Map<String, dynamic> message) async {
-        print('on resume $message');
-      },
-      onLaunch: (Map<String, dynamic> message) async {
-        print('on launch $message');
-      },
-    );
-
-    _firebaseMessaging.getToken().then((token) {
-      print("Firebase Messaging Token: " + token);
-
-      Firestore.instance
-          .collection("users")
-          .document(currentUserModel.id)
-          .updateData({"androidNotificationToken": token});
-    });
+  if (Platform.isIOS) {
+    iOS_Permission();
   }
-  if (Platform.isIOS) iOS_Permission();
-  
-  
-  // _firebaseMessaging.requestNotificationPermissions();
   _firebaseMessaging.getToken().then((token) {
     print("token is " + token);
     Firestore.instance
         .collection("users")
         .document(currentUserModel.id)
-        .updateData({"iosNotificationToken": token});
+        .updateData({"notification_token": token});
   });
 
   _firebaseMessaging.configure(
@@ -193,59 +126,7 @@ void iOS_Permission() {
   });
 }
 
-Future<void> tryCreateUserRecord(BuildContext context) async {
-  GoogleSignInAccount user = googleSignIn.currentUser;
-  if (user == null) {
-    return null;
-  }
-  DocumentSnapshot userRecord = await users_ref.document(user.id).get();
-  if (userRecord.data == null) {
-    // no user record exists, time to create
-
-    String userName = await Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (context) => Center(
-                child: Scaffold(
-                    appBar: AppBar(
-                      leading: Container(),
-                      title: Text('Fill out missing data',
-                          style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold)),
-                      backgroundColor: Colors.white,
-                    ),
-                    body: ListView(
-                      children: <Widget>[
-                        Container(
-                          child: CreateAccount(),
-                        ),
-                      ],
-                    )),
-              )),
-    );
-
-    if (userName != null || userName.length != 0) {
-      users_ref.document(user.id).setData({
-        "id": user.id,
-        "username": userName,
-        "photoUrl": user.photoUrl,
-        "email": user.email,
-        "displayName": user.displayName,
-        "bio": "",
-        "followers": {},
-        "following": {},
-      });
-    }
-    userRecord = await users_ref.document(user.id).get();
-  }
-
-  currentUserModel = await User.fromDocument(userRecord);
-  return null;
-}
-
-Future<String> _downloadImage(
-    String photoURL, String uid) async {
+Future<String> _downloadImage(String photoURL, String uid) async {
   // var httpClient = HttpClient();
   // var req = await httpClient.getUrl(Uri.parse(photoURL));
   // var _dir = (await getApplicationDocumentsDirectory()).path;
@@ -264,18 +145,19 @@ Future<String> _downloadImage(
   print("19191919191991919191919199191 " + path.toString());
   // String image_path =  await uploadImage(file);
   // var uuid = Uuid().v1();
-  var usersImages = FirebaseStorage.instance.ref().child("profilePic/${uid}.jpg");
+  var usersImages =
+      FirebaseStorage.instance.ref().child("profilePic/${uid}.jpg");
   var metadata = StorageMetadata(contentType: "image/jpeg");
   // var storegRef = FirebaseStorage.instance.ref();
 // var mountainsRef = storegRef.child("$uid.jpg");
 
   // StorageReference ref =
   //     FirebaseStorage.instance.ref().child("profilePic/pic_$uid.jpg");
-  StorageUploadTask uploadTask =  usersImages.putFile(file);
-StorageTaskSnapshot taskSnapshot= await uploadTask.onComplete;
+  StorageUploadTask uploadTask = usersImages.putFile(file);
+  StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
   // String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
   String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-  print("imageUrl after uploading is "+downloadUrl);
+  print("imageUrl after uploading is " + downloadUrl);
   return downloadUrl;
   // print("image file downloaded and located at"+image_path);
   // return image_path;
@@ -307,9 +189,9 @@ Future<String> getNickname(var contexts) async {
   return userName;
 }
 
-void createNewUser(
-    Map<String, dynamic> user_data, String photo_FB_URL, String userName) async {
-      print("createNewUser: here id "+user_data['id']);
+void createNewUser(Map<String, dynamic> user_data, String photo_FB_URL,
+    String userName) async {
+  print("createNewUser: here id " + user_data['id']);
   await users_ref.document(user_data['id']).setData({
     "bio": "",
     "birthday": user_data['birthday'],
@@ -327,26 +209,27 @@ void createNewUser(
   Coordinates current_cordinate = await getUserCordinate();
 
   await Firestore.instance
-    .collection("post_preferences")
-    .document(user_data['id']).setData({
-      "categories":FeedCategory.getAllCategoriesNames(),
-      "radius":1,
-      "gender":FeedCategory.genderNames,
-      "location":GeoPoint(current_cordinate.latitude, current_cordinate.longitude),
-      "min_age":FilterPosts.minAge,
-      "max_age":FilterPosts.maxAge
-    });
-  
+      .collection("post_preferences")
+      .document(user_data['id'])
+      .setData({
+    "categories": FeedCategory.getAllCategoriesNames(),
+    "radius": 1.0,
+    "gender": FeedCategory.genderNames,
+    "location":
+        GeoPoint(current_cordinate.latitude, current_cordinate.longitude),
+    "min_age": FilterPosts.minAge,
+    "max_age": FilterPosts.maxAge
+  });
 }
 
-Future<void> tryCreateUserRecordFB(BuildContext context) async {
+Future<DocumentSnapshot> tryCreateUserRecordFB(BuildContext context) async {
   // final user_token = await FBlogin_a.currentAccessToken.accessToken;
 // final result = await facebookSignIn.logInWithReadPermissions(['email']);
   final FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
-
+  DocumentSnapshot userRecordReturn = null;
   if (accessToken == null) {
     print("No user token exist");
-    return null;
+    return userRecordReturn;
   }
   // print("token is " + accessToken.token);
   var httpClient = HttpClient();
@@ -366,12 +249,7 @@ Future<void> tryCreateUserRecordFB(BuildContext context) async {
       if (userRecord.data == null) {
         print("no user record exists, time to create");
         String userName = await getNickname(context);
-        // print("nickname is "+nickname);
         await createNewUser(user_data, photo_FB_URL, userName);
-        
-       // await _downloadImage(photo_FB_URL,user_data['id']);
-        // String userName = user_data['name']; //see getnickname
-        
         userRecord = await users_ref.document(user_data['id']).get();
       } else {
         //TODO : download user photo once registered and upload it
@@ -380,9 +258,7 @@ Future<void> tryCreateUserRecordFB(BuildContext context) async {
             .document(user_data['id'])
             .updateData({"profile_pic_url": photo_FB_URL});
       }
-
-      currentUserModel = User.fromDocument(userRecord);
-      await currentUserModel.setUserPref();
+      userRecordReturn = userRecord;
       print("######user record created######");
     } else {
       print(
@@ -392,14 +268,16 @@ Future<void> tryCreateUserRecordFB(BuildContext context) async {
     print('Failed invoking the getFeed function. Exception: $exception');
   }
 
-  return null;
+  return userRecordReturn;
 }
+
 updateCurrentUser(User currentUser, UserPreference pref) {
   //  DocumentSnapshot userRecord = await users_ref.document(userId).get();
   //  currentUserModel = await User.fromDocument(userRecord);
   //  await currentUser.setUserPref();
   currentUser.preferences = pref;
 }
+
 class Fluttergram extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -441,6 +319,8 @@ class _HomePageState extends State<HomePage> {
   bool triedSilentLogin = false;
   bool setupNotifications = false;
   File imageFile;
+  bool showRegisterWithFB = false;
+  bool loginFinished = false;
   Scaffold buildLoginPage() {
     return Scaffold(
       body: Center(
@@ -471,6 +351,120 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  buildStartScreen() {
+    print("building startScreen");
+    return Scaffold(body:Container(
+      alignment: FractionalOffset.center,
+      child: Text(
+        'Xfeed',
+        style: TextStyle(
+            fontSize: 60.0, fontFamily: "Billabong", color: Colors.black),
+      ),
+    ));
+  }
+
+  Scaffold buildHomeScreen() {
+    return Scaffold(
+      body: PageView(
+        children: [
+          Container(
+            color: Colors.white,
+            child: Feed(),
+          ),
+          Container(color: Colors.white, child: SearchPage()),
+          Container(color: Colors.white, child: ActivityFeedPage()),
+          Container(
+              color: Colors.white,
+              child: ProfilePage(
+                userId: currentUserModel.id,
+              )),
+        ],
+        controller: pageController,
+        physics: NeverScrollableScrollPhysics(),
+      ),
+      floatingActionButton: Container(
+          height: 65.0,
+          width: 70.0,
+          child: FloatingActionButton(
+            onPressed: () async {
+              var image = await ImagePicker.pickImage(
+                  source: ImageSource.camera,
+                  maxWidth: 1920,
+                  maxHeight: 1200,
+                  imageQuality: 80);
+
+              setState(() {
+                imageFile = image;
+                imageFile == null
+                    ? pageController.jumpToPage(
+                        feedPage) //jump to feed page in case no image captured
+                    : Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => Uploader(
+                                  imageFile: imageFile,
+                                )));
+              });
+            },
+            child: Icon(Icons.add),
+          )),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: CircularNotchedRectangle(),
+        color: Colors.white,
+        child: Container(
+          height: 30,
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              IconButton(
+                iconSize: 30.0,
+                padding: EdgeInsets.only(left: 28.0),
+                icon: Icon(Icons.home),
+                onPressed: () {
+                  setState(() {
+                    pageController.jumpToPage(feedPage);
+                  });
+                },
+              ),
+              IconButton(
+                iconSize: 30.0,
+                padding: EdgeInsets.only(right: 28.0),
+                icon: Icon(Icons.search),
+                onPressed: () {
+                  setState(() {
+                    pageController.jumpToPage(searchPage);
+                  });
+                },
+              ),
+              IconButton(
+                iconSize: 30.0,
+                padding: EdgeInsets.only(left: 28.0),
+                icon: Icon(Icons.star),
+                onPressed: () {
+                  setState(() {
+                    pageController.jumpToPage(favoritePage);
+                  });
+                },
+              ),
+              IconButton(
+                iconSize: 30.0,
+                padding: EdgeInsets.only(right: 28.0),
+                icon: Icon(Icons.person),
+                onPressed: () {
+                  setState(() {
+                    pageController.jumpToPage(profilePage);
+                  });
+                },
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     print("building page");
@@ -481,149 +475,48 @@ class _HomePageState extends State<HomePage> {
     if (setupNotifications == false && currentUserModel != null) {
       setUpNotifications();
     }
-    print("acceccToken " +
-        (FBlogin_a.currentAccessToken == null ? "true" : "false") +
-        " current_model " +
-        (currentUserModel == null ? "true" : "false"));
-    return (FBlogin_a.currentAccessToken == null || currentUserModel == null)
-        ? buildLoginPage()
-        : Scaffold(
-            body: PageView(
-              children: [
-                Container(
-                  color: Colors.white,
-                  child: Feed(),
-                ),
-                Container(color: Colors.white, child: SearchPage()),
-                Container(color: Colors.white, child: ActivityFeedPage()),
-                Container(
-                    color: Colors.white,
-                    child: ProfilePage(
-                      userId: currentUserModel.id,
-                    )),
-              ],
-              controller: pageController,
-              physics: NeverScrollableScrollPhysics(),
-            ),
-            floatingActionButton: Container(
-                height: 65.0,
-                width: 70.0,
-                child: FloatingActionButton(
-                  onPressed: () async {
-                    var image = await ImagePicker.pickImage(
-                        source: ImageSource.camera,
-                        maxWidth: 1920,
-                        maxHeight: 1200,
-                        imageQuality: 80);
 
-                    setState(() {
-                      imageFile = image;
-                      imageFile == null
-                          ? pageController.jumpToPage(
-                              feedPage) //jump to feed page in case no image captured
-                          : Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => Uploader(
-                                        imageFile: imageFile,
-                                      )));
-                    });
-                  },
-                  child: Icon(Icons.add),
-                )),
-            floatingActionButtonLocation:
-                FloatingActionButtonLocation.centerDocked,
-            bottomNavigationBar: BottomAppBar(
-              shape: CircularNotchedRectangle(),
-              color: Colors.white,
-              child: Container(
-                height: 30,
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    IconButton(
-                      iconSize: 30.0,
-                      padding: EdgeInsets.only(left: 28.0),
-                      icon: Icon(Icons.home),
-                      onPressed: () {
-                        setState(() {
-                          pageController.jumpToPage(feedPage);
-                        });
-                      },
-                    ),
-                    IconButton(
-                      iconSize: 30.0,
-                      padding: EdgeInsets.only(right: 28.0),
-                      icon: Icon(Icons.search),
-                      onPressed: () {
-                        setState(() {
-                          pageController.jumpToPage(searchPage);
-                        });
-                      },
-                    ),
-                    IconButton(
-                      iconSize: 30.0,
-                      padding: EdgeInsets.only(left: 28.0),
-                      icon: Icon(Icons.star),
-                      onPressed: () {
-                        setState(() {
-                          pageController.jumpToPage(favoritePage);
-                        });
-                      },
-                    ),
-                    IconButton(
-                      iconSize: 30.0,
-                      padding: EdgeInsets.only(right: 28.0),
-                      icon: Icon(Icons.person),
-                      onPressed: () {
-                        setState(() {
-                          pageController.jumpToPage(profilePage);
-                        });
-                      },
-                    )
-                  ],
-                ),
-              ),
-            ),
-          );
+    if (showRegisterWithFB) {
+      return buildLoginPage();
+    } else if (loginFinished) {
+      return buildHomeScreen();
+    }
+    return buildStartScreen();
   }
 
-  void _FBlogin() async {
-    await _ensureFBLoggedIn(context);
-    setState(() {
-      triedSilentLogin = true;
-    });
+  void initCurrentUserModel(DocumentSnapshot userRecord) async {
+    if (userRecord == null) {
+      setState(() {
+        showRegisterWithFB = true;
+        triedSilentLogin = true;
+      });
+    } else {
+      setState(() {
+        currentUserModel = User.fromDocument(userRecord);
+        triedSilentLogin = true;
+        loginFinished = true;
+        showRegisterWithFB = false;
+        print("Showing Home Screen");
+      });
+      await currentUserModel.setUserPref();
+    }
   }
 
   void login() async {
-    await _ensureFBLoggedIn(context);
-    setState(() {
-      print("@@@@@@@here");
-      triedSilentLogin = true;
-    });
+    _ensureFBLoggedIn(context)
+        .then((userRecord) => initCurrentUserModel(userRecord));
   }
 
-  void setUpNotifications() {
-    _setUpNotifications();
+  void setUpNotifications() async {
+    await _setUpNotifications();
     setState(() {
       setupNotifications = true;
     });
   }
 
-  // void silentLogin(BuildContext context) async {
-  //   await _silentLogin(context);
-  //   setState(() {
-  //     triedSilentLogin = true;
-  //   });
-  // }
-
   void silentFBLogin(BuildContext context) async {
-    await _silentFBLogin(context);
-    setState(() {
-      print("here00000000000");
-      triedSilentLogin = true;
-    });
+    _silentFBLogin(context).then((value) => initCurrentUserModel(value));
+  
   }
 
   @override

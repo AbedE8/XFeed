@@ -67,62 +67,6 @@ class _ProfilePage extends State<ProfilePage>
     }));
   }
 
-  // followUser() {
-  //   print('following user');
-  //   setState(() {
-  //     this.isFollowing = true;
-  //     followButtonClicked = true;
-  //   });
-
-  //   Firestore.instance.document("insta_users/$profileId").updateData({
-  //     'followers.$currentUserId': true
-  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
-  //   });
-
-  //   Firestore.instance.document("insta_users/$currentUserId").updateData({
-  //     'following.$profileId': true
-  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
-  //   });
-
-  //   //updates activity feed
-  //   Firestore.instance
-  //       .collection("insta_a_feed")
-  //       .document(profileId)
-  //       .collection("items")
-  //       .document(currentUserId)
-  //       .setData({
-  //     "ownerId": profileId,
-  //     "username": currentUserModel.username,
-  //     "userId": currentUserId,
-  //     "type": "follow",
-  //     "userProfileImg": currentUserModel.photoUrl,
-  //     "timestamp": DateTime.now()
-  //   });
-  // }
-
-  // unfollowUser() {
-  //   setState(() {
-  //     isFollowing = false;
-  //     followButtonClicked = true;
-  //   });
-
-  //   Firestore.instance.document("insta_users/$profileId").updateData({
-  //     'followers.$currentUserId': false
-  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
-  //   });
-
-  //   Firestore.instance.document("insta_users/$currentUserId").updateData({
-  //     'following.$profileId': false
-  //     //firestore plugin doesnt support deleting, so it must be nulled / falsed
-  //   });
-
-  //   Firestore.instance
-  //       .collection("insta_a_feed")
-  //       .document(profileId)
-  //       .collection("items")
-  //       .document(currentUserId)
-  //       .delete();
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +121,8 @@ class _ProfilePage extends State<ProfilePage>
 
     Container buildProfileFollowButton(User user) {
       // viewing your own profile - should show edit button
-      if(user.id != currentUserModel.id) {
+
+      if(currentUserModel == null || user.id != currentUserModel.id) {
         return Container();
       }
       return buildFollowButton(
@@ -188,33 +133,6 @@ class _ProfilePage extends State<ProfilePage>
         function: editProfile,
       );
 
-      //   // already following user - should show unfollow button
-      //   if (isFollowing) {
-      //     return buildFollowButton(
-      //       text: "Unfollow",
-      //       backgroundcolor: Colors.white,
-      //       textColor: Colors.black,
-      //       borderColor: Colors.grey,
-      //       function: unfollowUser,
-      //     );
-      //   }
-
-      //   // does not follow user - should show follow button
-      //   if (!isFollowing) {
-      //     return buildFollowButton(
-      //       text: "Follow",
-      //       backgroundcolor: Colors.blue,
-      //       textColor: Colors.white,
-      //       borderColor: Colors.blue,
-      //       function: followUser,
-      //     );
-      //   }
-
-      //   return buildFollowButton(
-      //       text: "loading...",
-      //       backgroundcolor: Colors.white,
-      //       textColor: Colors.black,
-      //       borderColor: Colors.grey);
     }
 
     Row buildImageViewButtonBar() {
@@ -312,12 +230,6 @@ class _ProfilePage extends State<ProfilePage>
 
           User user = User.fromDocument(snapshot.data);
 
-          // if (user.followers.containsKey(currentUserId) &&
-          //     user.followers[currentUserId] &&
-          //     followButtonClicked == false) {
-          //   isFollowing = true;
-          // }
-
           return Scaffold(
               appBar: AppBar(
                 title: Text(
@@ -349,10 +261,6 @@ class _ProfilePage extends State<ProfilePage>
                                         MainAxisAlignment.spaceEvenly,
                                     children: <Widget>[
                                       buildStatColumn("posts", postCount),
-                                      // buildStatColumn("followers",
-                                      //     _countFollowings(user.followers)),
-                                      // buildStatColumn("following",
-                                      //     _countFollowings(user.following)),
                                     ],
                                   ),
                                   Row(
@@ -412,7 +320,7 @@ class _ProfilePage extends State<ProfilePage>
 
   // ensures state is kept when switching pages
   @override
-  bool get wantKeepAlive => true;
+  bool get wantKeepAlive => false;
 }
 
 class ImageTile extends StatelessWidget {
