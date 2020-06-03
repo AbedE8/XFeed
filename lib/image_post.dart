@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'location_feed.dart';
 import 'main.dart';
 import 'dart:async';
 import 'profile_page.dart';
@@ -92,7 +93,7 @@ class ImagePost extends StatefulWidget {
         activities: data['category'],
         timeStr: timePassed(differ));
   }
-
+ //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
   static Future<ImagePost> fromID(String postID) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
     posts_reference
@@ -247,7 +248,12 @@ class _ImagePost extends State<ImagePost> {
                   openProfile(context, ownerId);
                 },
               ),
-              subtitle: Text(this.location),
+              subtitle: GestureDetector(
+                child: Text(this.location),
+                onTap: () {
+                  openLocationFeed(context, this.location);
+                },
+              ),
               //trailing: const Icon(Icons.more_vert),
               trailing: Text(
                   this.activities == null ? "NA" : this.activities.toString()),

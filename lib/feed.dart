@@ -25,7 +25,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   @override
   void initState() {
     super.initState();
-    this._loadFeed();
+    this._getFeed();
     initLocation();
   }
 
@@ -124,20 +124,6 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     return;
   }
 
-  _loadFeed() async {
-    _getFeed();
-  }
-
-  bool validate(Map<String, dynamic> data) {
-    
-    if (!data.containsKey('num_of_posts')) {
-      
-      return false;
-    } else {
-      return true;
-    }
-  }
-
   Future<List<String>> _fetchAllPostsForTest() async {
     var snap = await Firestore.instance.collection('posts').getDocuments();
     List<String> postsIds = new List();
@@ -147,32 +133,12 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     return postsIds;
   }
 
-  Future<Map<String, dynamic>> parseFeedFromJson(
-      Map<String, dynamic> data_in_json) async {
-    int num_of_posts = data_in_json['num_of_posts'];
-    List<Map<String, dynamic>> posts =
-        data_in_json['posts'].cast<Map<String, dynamic>>();
-    List<ImagePost> listOfPosts = [];
-    List<String> listOfPostsId = [];
-    var i;
-
-    for (i = 0; i < num_of_posts; i++) {
-      listOfPosts.add(await ImagePost.fromJSON(posts[i]));
-    }
-    for (var j = i; j < posts.length; j++) {
-      listOfPostsId.add(posts[j]['post_id']);
-    }
-
-    return {'posts': listOfPosts, 'postsId': listOfPostsId};
-  }
-
   _getFeed() async {
     print("Staring getFeed");
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
     String userId = currentUserModel.id.toString();
 
+//TODO: set this part of code as part of urlParser
     var url =
         'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' +
             userId;
@@ -189,7 +155,6 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
       var response = await request.close();
       if (response.statusCode == HttpStatus.ok) {
         String json = await response.transform(utf8.decoder).join();
-        prefs.setString("feed", json);
         print("json is " + json);
 
         Map<String, dynamic> data_in_json = jsonDecode(json);
@@ -199,7 +164,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
         if (validate(data_in_json) == true) {
           Map<String, dynamic> parsedFeed =
               await parseFeedFromJson(data_in_json);
-           num_of_posts = data_in_json['num_of_posts'];
+          num_of_posts = data_in_json['num_of_posts'];
           listOfPosts = parsedFeed['posts'];
           postsID = parsedFeed['postsId'];
           //List<String> ids = await _fetchAllPostsForTest();
@@ -217,7 +182,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
       result = 'Failed invoking the getFeed function. Exception: $exception';
     }
     print(result);
-
+// until here
     setState(() {
       num_of_return_posts = num_of_posts.toDouble();
       feedData = listOfPosts;
@@ -241,7 +206,38 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     return listOfPosts;
   }
 
+  
   // ensures state is kept when switching pages
   @override
   bool get wantKeepAlive => true;
+}
+
+//TODO: set this part of code as part of urlParser
+bool validate(Map<String, dynamic> data) {
+  
+  if (!data.containsKey('num_of_posts')) {
+    
+    return false;
+  } else {
+    return true;
+  }
+}
+//TODO: set this part of code as part of urlParser
+Future<Map<String, dynamic>> parseFeedFromJson(
+    Map<String, dynamic> data_in_json) async {
+  int num_of_posts = data_in_json['num_of_posts'];
+  List<Map<String, dynamic>> posts =
+      data_in_json['posts'].cast<Map<String, dynamic>>();
+  List<ImagePost> listOfPosts = [];
+  List<String> listOfPostsId = [];
+  var i;
+
+  for (i = 0; i < num_of_posts; i++) {
+    listOfPosts.add(await ImagePost.fromJSON(posts[i]));
+  }
+  for (var j = i; j < posts.length; j++) {
+    listOfPostsId.add(posts[j]['post_id']);
+  }
+
+  return {'posts': listOfPosts, 'postsId': listOfPostsId};
 }
