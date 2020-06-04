@@ -17,6 +17,7 @@ class _MyFeedListViewState extends State<FeedListView> {
   final List<String> postsID;
   ScrollController controller;
   static const int postsToFetch = 1;
+  static const int initPostsToFetch = 3;
   // List<String> items = new List.generate(100, (index) => 'Hello $index');
 
   _MyFeedListViewState(this.posts, this.postsID);
@@ -26,7 +27,7 @@ class _MyFeedListViewState extends State<FeedListView> {
     super.initState();
     controller = new ScrollController()..addListener(_scrollListener);
     if (posts.length < 2) {
-      Future<List<ImagePost>> newPosts = fetchPostsFromId(3);
+      Future<List<ImagePost>> newPosts = fetchPostsFromId(initPostsToFetch);
       newPosts.then((value) => updateList(value));
     }
   }

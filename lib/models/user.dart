@@ -42,7 +42,7 @@ class User {
         await Firestore.instance.collection("users").document(userId).get();
 
     if (user.data == null) {
-      print("uncorrect userid");
+      print("uncorrect userid "+userId);
       return null;
     } else {
       return User(
@@ -104,4 +104,10 @@ class UserPreference {
         " categories: "+this.categories.toString()+
         " radius: "+this.radious.toString();
   }
+}
+class UserInChatList {
+  final User user;
+  final String lastMessage;
+
+  UserInChatList(this.user, this.lastMessage);
 }

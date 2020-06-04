@@ -127,6 +127,7 @@ class ImagePost extends StatefulWidget {
   final String postId;
   final String ownerId;
   final activities;
+  // FloatingActionButton loc = new FloatingActionButton(onPressed: null)
   _ImagePost createState() => _ImagePost(
       mediaUrl: this.mediaUrl,
       username: this.username,

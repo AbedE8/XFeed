@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'chat.dart';
 import 'main.dart';
 import 'image_post.dart';
 import 'dart:async';
@@ -17,6 +18,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePage extends State<ProfilePage>
     with AutomaticKeepAliveClientMixin<ProfilePage> {
   final String profileId;
+
   String currentUserId = currentUserModel.id;
   String view = "grid"; // default view
   bool isFollowing = false;
@@ -24,7 +26,15 @@ class _ProfilePage extends State<ProfilePage>
   int postCount = 0;
   int followerCount = 0;
   int followingCount = 0;
+  User userProfile;
   _ProfilePage(this.profileId);
+  openChat() {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                Chat(userToChatWith: userProfile,)));
+  }
 
   editProfile() {
     EditProfilePage editPage = EditProfilePage();
@@ -66,7 +76,6 @@ class _ProfilePage extends State<ProfilePage>
       );
     }));
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -122,8 +131,14 @@ class _ProfilePage extends State<ProfilePage>
     Container buildProfileFollowButton(User user) {
       // viewing your own profile - should show edit button
 
-      if(currentUserModel == null || user.id != currentUserModel.id) {
-        return Container();
+      if (currentUserModel == null || user.id != currentUserModel.id) {
+        return buildFollowButton(
+          text: "Send Message",
+          backgroundcolor: Colors.white,
+          textColor: Colors.black,
+          borderColor: Colors.grey,
+          function: openChat,
+        );
       }
       return buildFollowButton(
         text: "Edit Profile",
@@ -132,7 +147,6 @@ class _ProfilePage extends State<ProfilePage>
         borderColor: Colors.grey,
         function: editProfile,
       );
-
     }
 
     Row buildImageViewButtonBar() {
@@ -166,11 +180,10 @@ class _ProfilePage extends State<ProfilePage>
     Container buildUserPosts() {
       Future<List<ImagePost>> getPosts() async {
         List<ImagePost> posts = [];
-        print("fetching my posts profileId " + profileId);
         var snap = await Firestore.instance
             .collection('posts')
             .where("publisher", isEqualTo: profileId)
-            .orderBy("timeStamp",descending: true)
+            .orderBy("timeStamp", descending: true)
             .getDocuments();
         for (var doc in snap.documents) {
           // print("post "+doc.data.toString());
@@ -229,7 +242,7 @@ class _ProfilePage extends State<ProfilePage>
                 child: CircularProgressIndicator());
 
           User user = User.fromDocument(snapshot.data);
-
+          userProfile = user;
           return Scaffold(
               appBar: AppBar(
                 title: Text(

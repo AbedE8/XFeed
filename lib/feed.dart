@@ -1,3 +1,4 @@
+import 'package:Xfeedm/chat_main_page.dart';
 import 'package:Xfeedm/feed_list_view.dart';
 import 'package:Xfeedm/models/user.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -20,7 +21,8 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
   UserPreference filterData = null;
   List<String> feedPostsID = [];
-  double num_of_return_posts = -1; //the initial value because at the beggining we dont now the num of posts
+  double num_of_return_posts =
+      -1; //the initial value because at the beggining we dont now the num of posts
   Coordinates cordinate;
   @override
   void initState() {
@@ -40,7 +42,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     if (num_of_return_posts == 0) {
       return Container(
           alignment: FractionalOffset.center,
-          child: Text("No posts to show",style: TextStyle(fontSize:20)));
+          child: Text("No posts to show", style: TextStyle(fontSize: 20)));
     } else if (feedData != null) {
       return FeedListView(posts: feedData, postsID: feedPostsID);
     } else {
@@ -88,6 +90,17 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
             );
           },
         ),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.chat,
+            ),
+            onPressed: () {
+              Navigator.push(
+                  context, MaterialPageRoute(builder: (context) => ChatPage()));
+            },
+          )
+        ],
       ),
       body: RefreshIndicator(onRefresh: _refresh, child: buildFeed()
           // child: feedData != null ? ListView.builder(itemBuilder: (context,index){
@@ -169,7 +182,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
           postsID = parsedFeed['postsId'];
           //List<String> ids = await _fetchAllPostsForTest();
           //postsID.addAll(ids);
-          
+
         } else {
           print("data from server failed in validation");
         }
