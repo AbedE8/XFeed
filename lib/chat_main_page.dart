@@ -109,7 +109,7 @@ class _ChatPage extends State<ChatPage> {
       var lastMsg = await Firestore.instance
                   .collection('messages')
                   .document(chatGroupId)
-                  .collection(chatGroupId)
+                  .collection('items')
                   .orderBy('timestamp', descending: true)
                   .limit(1)
                   .getDocuments();

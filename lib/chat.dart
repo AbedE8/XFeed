@@ -187,13 +187,14 @@ class ChatScreenState extends State<ChatScreen> {
       var documentReference = Firestore.instance
           .collection('messages')
           .document(groupChatId)
-          .collection(groupChatId)
+          .collection('items')
           .document(DateTime.now().millisecondsSinceEpoch.toString());
 
       Firestore.instance.runTransaction((transaction) async {
         await transaction.set(
           documentReference,
           {
+            'fromUserName': currentUserModel.username,
             'idFrom': currentUserId,
             'idTo': peerId,
             'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -688,7 +689,7 @@ class ChatScreenState extends State<ChatScreen> {
               stream: Firestore.instance
                   .collection('messages')
                   .document(groupChatId)
-                  .collection(groupChatId)
+                  .collection('items')
                   .orderBy('timestamp', descending: true)
                   .limit(20)
                   .snapshots(),
