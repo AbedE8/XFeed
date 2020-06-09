@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -17,6 +16,9 @@ import "package:google_maps_webservice/places.dart";
 import 'package:autocomplete_textfield/autocomplete_textfield.dart';
 import 'filter_page.dart';
 import 'package:flutter_google_places/flutter_google_places.dart';
+import 'server_controller.dart';
+
+var serverController = ServerController();
 
 class Uploader extends StatefulWidget {
   final File imageFile;
@@ -432,7 +434,7 @@ class _Uploader extends State<Uploader> {
       uploading = true;
     });
     uploadImage(file).then((String data) {
-      postToFireStore(
+      serverController.uploadPost(
           mediaUrl: data,
           description: descriptionController.text,
           location: locationController.text,
@@ -600,35 +602,4 @@ Future<String> uploadImage(var imageFile) async {
 
   String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
   return downloadUrl;
-}
-
-void postToFireStore(
-    {String mediaUrl,
-    String location,
-    String description,
-    Set<String> activity,
-    Coordinates point,
-    Set<String> genders,
-    RangeValues ageRange}) async {
-  var req_body = jsonEncode(<String, dynamic>{
-    'lng': "${point.longitude}",
-    'lat': "${point.latitude}",
-    'feature_name': location,
-    'img_url': mediaUrl,
-    'description': description,
-    "uid": currentUserModel.id.toString(),
-    "timestamp": DateTime.now().toUtc().toString(),
-    "category": activity.toList(),
-    "genders": genders.toList(),
-    "min_age": ageRange.start.toInt(),
-    "max_age": ageRange.end.toInt()
-  });
-  print('upload post with time '+DateTime.now().toUtc().toString());
-  // print(req);
-  final http.Response response = await http.post(
-      'https://us-central1-xfeed-497fe.cloudfunctions.net/uploadPost',
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: req_body);
 }

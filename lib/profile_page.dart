@@ -243,6 +243,7 @@ class _ProfilePage extends State<ProfilePage>
 
           User user = User.fromDocument(snapshot.data);
           userProfile = user;
+          print(user.username);
           return Scaffold(
               appBar: AppBar(
                 title: Text(
@@ -342,6 +343,7 @@ class ImageTile extends StatelessWidget {
   ImageTile(this.imagePost);
 
   clickedImage(BuildContext context) {
+
     Navigator.of(context)
         .push(MaterialPageRoute<bool>(builder: (BuildContext context) {
       return Center(

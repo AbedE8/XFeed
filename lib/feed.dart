@@ -12,6 +12,7 @@ import 'main.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'server_controller.dart';
 
 class Feed extends StatefulWidget {
   _Feed createState() => _Feed();
@@ -150,57 +151,14 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     print("Staring getFeed");
 
     String userId = currentUserModel.id.toString();
-
-//TODO: set this part of code as part of urlParser
-    var url =
-        'https://us-central1-xfeed-497fe.cloudfunctions.net/getFeed?uid=' +
-            userId;
-
-    print("url is " + url);
-    var httpClient = HttpClient();
-
-    List<ImagePost> listOfPosts;
-    List<String> postsID;
-    String result;
-    int num_of_posts;
-    try {
-      var request = await httpClient.getUrl(Uri.parse(url));
-      var response = await request.close();
-      if (response.statusCode == HttpStatus.ok) {
-        String json = await response.transform(utf8.decoder).join();
-        print("json is " + json);
-
-        Map<String, dynamic> data_in_json = jsonDecode(json);
-        print("num_of_posts " + data_in_json['num_of_posts'].toString());
-        List<Map<String, dynamic>> data =
-            data_in_json['posts'].cast<Map<String, dynamic>>();
-        if (validate(data_in_json) == true) {
-          Map<String, dynamic> parsedFeed =
-              await parseFeedFromJson(data_in_json);
-          num_of_posts = data_in_json['num_of_posts'];
-          listOfPosts = parsedFeed['posts'];
-          postsID = parsedFeed['postsId'];
-          //List<String> ids = await _fetchAllPostsForTest();
-          //postsID.addAll(ids);
-
-        } else {
-          print("data from server failed in validation");
-        }
-        result = "Success in http request for feed";
-      } else {
-        result =
-            'Error getting a feed: Http status ${response.statusCode} | userId $userId';
-      }
-    } catch (exception) {
-      result = 'Failed invoking the getFeed function. Exception: $exception';
-    }
-    print(result);
-// until here
+    var serverController = ServerController();
+    var res = await serverController.getFeed(userId);
+    
     setState(() {
-      num_of_return_posts = num_of_posts.toDouble();
-      feedData = listOfPosts;
+      num_of_return_posts = res[resIndexValue.NUM_OF_POSTS.index].toDouble();
+      feedData = res[resIndexValue.POST_LIST.index];
       filterData = null;
-      feedPostsID = postsID;
+      feedPostsID = res[resIndexValue.POSTS_ID_LIST.index];
     });
   }
 
@@ -223,34 +181,4 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   // ensures state is kept when switching pages
   @override
   bool get wantKeepAlive => true;
-}
-
-//TODO: set this part of code as part of urlParser
-bool validate(Map<String, dynamic> data) {
-  
-  if (!data.containsKey('num_of_posts')) {
-    
-    return false;
-  } else {
-    return true;
-  }
-}
-//TODO: set this part of code as part of urlParser
-Future<Map<String, dynamic>> parseFeedFromJson(
-    Map<String, dynamic> data_in_json) async {
-  int num_of_posts = data_in_json['num_of_posts'];
-  List<Map<String, dynamic>> posts =
-      data_in_json['posts'].cast<Map<String, dynamic>>();
-  List<ImagePost> listOfPosts = [];
-  List<String> listOfPostsId = [];
-  var i;
-
-  for (i = 0; i < num_of_posts; i++) {
-    listOfPosts.add(await ImagePost.fromJSON(posts[i]));
-  }
-  for (var j = i; j < posts.length; j++) {
-    listOfPostsId.add(posts[j]['post_id']);
-  }
-
-  return {'posts': listOfPosts, 'postsId': listOfPostsId};
 }

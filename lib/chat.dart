@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:Xfeedm/main.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -13,7 +12,6 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'models/user.dart';
 
 class Chat extends StatelessWidget {
@@ -111,7 +109,7 @@ class ChatScreenState extends State<ChatScreen> {
   readLocal() async {
     // prefs = await SharedPreferences.getInstance();
     currentUserId = currentUserModel.id;
-   groupChatId = getChatGroupId(currentUserId, peerId);
+    groupChatId = getChatGroupId(currentUserId, peerId);
     // Firestore.instance.collection('users').document(currentUserId).updateData({'chattingWith': peerId});
 
     setState(() {});
