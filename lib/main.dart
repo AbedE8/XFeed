@@ -1,4 +1,8 @@
+import 'package:http/http.dart' as http;
+import 'package:image_downloader/image_downloader.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
+// import 'package:image_picker_saver/image_picker_saver.dart';
 import 'package:path/path.dart' as Path;
 import 'package:Xfeedm/categories.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -6,8 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:geocoder/model.dart';
-import 'package:image_downloader/image_downloader.dart';
+// import 'package:image_downloader/image_downloader.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'feed.dart';
 import 'location.dart';
 import 'upload_page.dart';
@@ -25,6 +30,7 @@ import 'dart:io' show Platform;
 import 'models/user.dart';
 import 'package:image_picker/image_picker.dart';
 import 'filter_page.dart';
+
 
 final auth = FirebaseAuth.instance;
 final googleSignIn = GoogleSignIn();
@@ -126,41 +132,28 @@ void iOS_Permission() {
   });
 }
 
-Future<String> _downloadImage(String photoURL, String uid) async {
-  // var httpClient = HttpClient();
-  // var req = await httpClient.getUrl(Uri.parse(photoURL));
-  // var _dir = (await getApplicationDocumentsDirectory()).path;
-  // String imagePath = _dir+'/'+uid;
-  // var file = File(imagePath);
-  // await file.writeAsBytes(req.bodyBytes);
-
+Future<void> _downloadImage(String photoURL) async {
+// var response = await http
+//           .get(photoURL);
+  
+//       debugPrint(response.statusCode.toString());
+  
+      // var filePath = await ImagePickerSaver.saveFile(
+          // fileData: response.bodyBytes);
+  
+      // var savedFile= File.fromUri(Uri.file(filePath));
   var imageId = await ImageDownloader.downloadImage(photoURL);
   if (imageId == null) {
     print("image library doesnt work");
     return null;
   }
   var path = await ImageDownloader.findPath(imageId);
-
-  var file = File(path);
-  print("19191919191991919191919199191 " + path.toString());
+  var savedFile= File.fromUri(Uri.file(path));
+  // var file = File(path);
+  print("19191919191991919191919199191 " + savedFile.path.toString());
   // String image_path =  await uploadImage(file);
   // var uuid = Uuid().v1();
-  var usersImages =
-      FirebaseStorage.instance.ref().child("profilePic/${uid}.jpg");
-  var metadata = StorageMetadata(contentType: "image/jpeg");
-  // var storegRef = FirebaseStorage.instance.ref();
-// var mountainsRef = storegRef.child("$uid.jpg");
-
-  // StorageReference ref =
-  //     FirebaseStorage.instance.ref().child("profilePic/pic_$uid.jpg");
-  StorageUploadTask uploadTask = usersImages.putFile(file);
-  StorageTaskSnapshot taskSnapshot = await uploadTask.onComplete;
-  // String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
-  String downloadUrl = await taskSnapshot.ref.getDownloadURL();
-  print("imageUrl after uploading is " + downloadUrl);
-  return downloadUrl;
-  // print("image file downloaded and located at"+image_path);
-  // return image_path;
+  //uploadFile(savedFile);
 }
 
 // TODO: implimint this window to get username/nickname from user instead of fb
@@ -223,14 +216,21 @@ void createNewUser(Map<String, dynamic> user_data, String photo_FB_URL,
 }
 
 Future<DocumentSnapshot> tryCreateUserRecordFB(BuildContext context) async {
-  // final user_token = await FBlogin_a.currentAccessToken.accessToken;
-// final result = await facebookSignIn.logInWithReadPermissions(['email']);
   final FacebookAccessToken accessToken = await FBlogin_a.currentAccessToken;
   DocumentSnapshot userRecordReturn = null;
+
   if (accessToken == null) {
     print("No user token exist");
     return userRecordReturn;
   }
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String userID = prefs.getString("id");
+  if (userID != null) {
+    print("no need to send to FB, currentUserID is " + userID);
+    userRecordReturn = await users_ref.document(userID).get();
+    return userRecordReturn;
+  }
+
   // print("token is " + accessToken.token);
   var httpClient = HttpClient();
 
@@ -246,10 +246,12 @@ Future<DocumentSnapshot> tryCreateUserRecordFB(BuildContext context) async {
 
       DocumentSnapshot userRecord =
           await users_ref.document(user_data['id']).get();
+      
       if (userRecord.data == null) {
         print("no user record exists, time to create");
         String userName = await getNickname(context);
         await createNewUser(user_data, photo_FB_URL, userName);
+        prefs.setString("id", user_data['id']);
         userRecord = await users_ref.document(user_data['id']).get();
       } else {
         //TODO : download user photo once registered and upload it
@@ -353,7 +355,8 @@ class _HomePageState extends State<HomePage> {
 
   buildStartScreen() {
     print("building startScreen");
-    return Scaffold(body:Container(
+    return Scaffold(
+        body: Container(
       alignment: FractionalOffset.center,
       child: Text(
         'Xfeed',
@@ -497,6 +500,7 @@ class _HomePageState extends State<HomePage> {
         loginFinished = true;
         showRegisterWithFB = false;
         print("Showing Home Screen");
+        _downloadImage(currentUserModel.photoUrl);
       });
       await currentUserModel.setUserPref();
     }
@@ -516,7 +520,6 @@ class _HomePageState extends State<HomePage> {
 
   void silentFBLogin(BuildContext context) async {
     _silentFBLogin(context).then((value) => initCurrentUserModel(value));
-  
   }
 
   @override
@@ -531,3 +534,20 @@ class _HomePageState extends State<HomePage> {
     pageController.dispose();
   }
 }
+Future uploadFile(File imageFile) async {
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
+    StorageUploadTask uploadTask = reference.putFile(imageFile);
+    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
+
+    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
+     String  imageUrl = downloadUrl;
+      print("uploadFile: imageUrl is imageUrl");
+            users_ref
+            .document(currentUserModel.id)
+            .updateData({"profile_pic_url":imageUrl});
+    }, onError: (err) {
+      print("file is  not image "+err.toString());
+      // Fluttertoast.showToast(msg: 'This file is not an image');
+    });
+  }

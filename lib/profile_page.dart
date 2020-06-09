@@ -27,13 +27,15 @@ class _ProfilePage extends State<ProfilePage>
   int followerCount = 0;
   int followingCount = 0;
   User userProfile;
+  List<DocumentSnapshot> _userPosts = new List();
   _ProfilePage(this.profileId);
   openChat() {
     Navigator.push(
         context,
         MaterialPageRoute(
-            builder: (context) =>
-                Chat(userToChatWith: userProfile,)));
+            builder: (context) => Chat(
+                  userToChatWith: userProfile,
+                )));
   }
 
   editProfile() {
@@ -101,6 +103,27 @@ class _ProfilePage extends State<ProfilePage>
               ))
         ],
       );
+    }
+
+    Future<List<ImagePost>> getPosts() async {
+      print("fetching user posts");
+      List<ImagePost> posts = [];
+      // var snap = await Firestore.instance
+      //     .collection('posts')
+      //     .where("publisher", isEqualTo: profileId)
+      //     .orderBy("timeStamp", descending: true)
+      //     .getDocuments();
+      for (var doc in _userPosts) {
+        // print("post "+doc.data.toString());
+        posts.add(await ImagePost.fromDocument(doc));
+      }
+      // print()
+      //  setState(() {
+      //  postCount = snap.documents.length;
+      // print("counts num " + postCount.toString());
+      //});
+
+      return posts.toList();
     }
 
     Container buildFollowButton(
@@ -178,26 +201,6 @@ class _ProfilePage extends State<ProfilePage>
     }
 
     Container buildUserPosts() {
-      Future<List<ImagePost>> getPosts() async {
-        List<ImagePost> posts = [];
-        var snap = await Firestore.instance
-            .collection('posts')
-            .where("publisher", isEqualTo: profileId)
-            .orderBy("timeStamp", descending: true)
-            .getDocuments();
-        for (var doc in snap.documents) {
-          // print("post "+doc.data.toString());
-          posts.add(await ImagePost.fromDocument(doc));
-        }
-        // print()
-        setState(() {
-          postCount = snap.documents.length;
-          // print("counts num " + postCount.toString());
-        });
-
-        return posts.toList();
-      }
-
       return Container(
           child: FutureBuilder<List<ImagePost>>(
         future: getPosts(),
@@ -207,7 +210,7 @@ class _ProfilePage extends State<ProfilePage>
                 alignment: FractionalOffset.center,
                 padding: const EdgeInsets.only(top: 10.0),
                 child: CircularProgressIndicator());
-          else if (view == "grid") {
+          if (view == "grid") {
             // build the grid
             return GridView.count(
                 crossAxisCount: 3,
@@ -230,86 +233,101 @@ class _ProfilePage extends State<ProfilePage>
       ));
     }
 
-    return StreamBuilder(
-        stream: Firestore.instance
-            .collection('users')
-            .document(profileId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData)
-            return Container(
-                alignment: FractionalOffset.center,
-                child: CircularProgressIndicator());
+    getUserInfo() async {
+      var snapshotUser = await Firestore.instance
+          .collection('users')
+          .document(profileId)
+          .get();
 
-          User user = User.fromDocument(snapshot.data);
-          userProfile = user;
-          print(user.username);
-          return Scaffold(
-              appBar: AppBar(
-                title: Text(
-                  user.username,
-                  style: const TextStyle(color: Colors.black),
-                ),
-                backgroundColor: Colors.white,
-              ),
-              body: ListView(
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: <Widget>[
-                        Row(
+      var snapshotPosts = await Firestore.instance
+          .collection('posts')
+          .where("publisher", isEqualTo: profileId)
+          .orderBy("timeStamp", descending: true)
+          .getDocuments();
+
+      postCount = snapshotPosts.documents.length;
+      _userPosts = snapshotPosts.documents;
+      print("updating num of posts to " + postCount.toString());
+      return snapshotUser;
+    }
+
+    return Scaffold(
+        body: FutureBuilder(
+            future: getUserInfo(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return Container(
+                    alignment: FractionalOffset.center,
+                    child: CircularProgressIndicator());
+
+              User user = User.fromDocument(snapshot.data);
+              userProfile = user;
+              return Scaffold(
+                  appBar: AppBar(
+                    title: Text(
+                      user.username,
+                      style: const TextStyle(color: Colors.black),
+                    ),
+                    backgroundColor: Colors.white,
+                  ),
+                  body: ListView(
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
                           children: <Widget>[
-                            CircleAvatar(
-                              radius: 40.0,
-                              backgroundColor: Colors.grey,
-                              backgroundImage: NetworkImage(user.photoUrl),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Column(
-                                children: <Widget>[
-                                  Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
+                            Row(
+                              children: <Widget>[
+                                CircleAvatar(
+                                  radius: 40.0,
+                                  backgroundColor: Colors.grey,
+                                  backgroundImage: NetworkImage(user.photoUrl),
+                                ),
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
                                     children: <Widget>[
-                                      buildStatColumn("posts", postCount),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.max,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceEvenly,
+                                        children: <Widget>[
+                                          buildStatColumn("posts", postCount),
+                                        ],
+                                      ),
+                                      Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: <Widget>[
+                                            buildProfileFollowButton(user)
+                                          ]),
                                     ],
                                   ),
-                                  Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      children: <Widget>[
-                                        buildProfileFollowButton(user)
-                                      ]),
-                                ],
-                              ),
-                            )
+                                )
+                              ],
+                            ),
+                            Container(
+                                alignment: Alignment.centerLeft,
+                                padding: const EdgeInsets.only(top: 15.0),
+                                child: Text(
+                                  user.displayName,
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                )),
+                            Container(
+                              alignment: Alignment.centerLeft,
+                              padding: const EdgeInsets.only(top: 1.0),
+                              child: Text(user.bio),
+                            ),
                           ],
                         ),
-                        Container(
-                            alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.only(top: 15.0),
-                            child: Text(
-                              user.displayName,
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            )),
-                        Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.only(top: 1.0),
-                          child: Text(user.bio),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Divider(),
-                  buildImageViewButtonBar(),
-                  Divider(height: 0.0),
-                  buildUserPosts(),
-                ],
-              ));
-        });
+                      ),
+                      Divider(),
+                      buildImageViewButtonBar(),
+                      Divider(height: 0.0),
+                      buildUserPosts(),
+                    ],
+                  ));
+            }));
   }
 
   changeView(String viewName) {
@@ -342,27 +360,53 @@ class ImageTile extends StatelessWidget {
 
   ImageTile(this.imagePost);
 
-  clickedImage(BuildContext context) {
+  getImagePost(DocumentSnapshot imageDocument) async {
+    return await ImagePost.fromDocument(imageDocument);
+  }
 
-    Navigator.of(context)
-        .push(MaterialPageRoute<bool>(builder: (BuildContext context) {
-      return Center(
-        child: Scaffold(
-            appBar: AppBar(
-              title: Text('Photo',
-                  style: TextStyle(
-                      color: Colors.black, fontWeight: FontWeight.bold)),
-              backgroundColor: Colors.white,
-            ),
-            body: ListView(
-              children: <Widget>[
-                Container(
-                  child: imagePost,
-                ),
-              ],
-            )),
-      );
-    }));
+  clickedImage(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute<bool>(
+      builder: (BuildContext context) {
+        return StreamBuilder(
+            stream: Firestore.instance
+                .collection('posts')
+                .document(imagePost.postId)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return Container(
+                    alignment: FractionalOffset.center,
+                    child: CircularProgressIndicator());
+
+              return Center(
+                child: Scaffold(
+                    appBar: AppBar(
+                      title: Text('Photo',
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold)),
+                      backgroundColor: Colors.white,
+                    ),
+                    body: ListView(
+                      children: <Widget>[
+                        Container(
+                          child: FutureBuilder(
+                            future: getImagePost(snapshot.data),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData)
+                                return Container(
+                                    alignment: FractionalOffset.center,
+                                    child: CircularProgressIndicator());
+                              return Container(child: snapshot.data);
+                            },
+                          ),
+                        ),
+                      ],
+                    )),
+              );
+            });
+      },
+    ));
   }
 
   Widget build(BuildContext context) {

@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'categories.dart';
 import 'filter_map.dart';
+import 'main.dart';
 
 class FilterPosts extends StatefulWidget {
   // This class is the configuration for the state. It holds the
@@ -44,10 +45,9 @@ class _Filter extends State<FilterPosts> {
               : true;
     }
     _chosedCategories = new List.from(userPref.categories);
-   _rangeLabels = new RangeLabels(
-      userPref.min_age.toInt().toString(), userPref.max_age.toInt().toString());
+    _rangeLabels = new RangeLabels(userPref.min_age.toInt().toString(),
+        userPref.max_age.toInt().toString());
   }
-
 
   onTappedCategory(bool newValue, int index) {
     if (!newValue) {
@@ -88,9 +88,26 @@ class _Filter extends State<FilterPosts> {
     }
     return null;
   }
-
+  _updateUserPreference(UserPreference filterData) async {
+    if (filterData == null) {
+      return;
+    }
+    await Firestore.instance
+        .collection("post_preferences")
+        .document(currentUserModel.id)
+        .setData({
+      "categories": filterData.categories,
+      "radius": filterData.radious,
+      "location": filterData.location,
+      "min_age": filterData.min_age,
+      "max_age": filterData.max_age
+    });
+    //need to update currentUserModel because of post preferences change
+    updateCurrentUser(currentUserModel, filterData);
+  }
   @override
   Widget build(BuildContext context) {
+
     return new Scaffold(
         appBar: new AppBar(
           backgroundColor: Colors.white,
@@ -101,9 +118,26 @@ class _Filter extends State<FilterPosts> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.pop(context, createUserPref());
+              Navigator.pop(context, false);
             },
           ),
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(
+                  Icons.check,
+                  color: Colors.blueAccent,
+                ),
+                onPressed: () async {
+                  UserPreference newPref = createUserPref(); 
+                  bool userPrefChanged = !(newPref.isEqual(userPref));
+                  if (userPrefChanged){
+                    await _updateUserPreference(newPref);
+                  }
+                  print("new post pref " +newPref.toString());
+                  print("old post pref " +userPref.toString());
+                  Navigator.maybePop(context, userPrefChanged);
+                })
+          ],
         ),
         body: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -182,10 +216,9 @@ class _Filter extends State<FilterPosts> {
               ],
             ),
             Padding(
-              padding: EdgeInsets.all( 10),
+              padding: EdgeInsets.all(10),
             )
           ],
         ));
   }
-
 }

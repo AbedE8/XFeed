@@ -117,12 +117,12 @@ class ChatScreenState extends State<ChatScreen> {
 
   Future getImage() async {
     imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
-
+    
     if (imageFile != null) {
       setState(() {
         isLoading = true;
       });
-      uploadFile();
+      uploadFile(imageFile);
     }
   }
 
@@ -134,7 +134,8 @@ class ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  Future uploadFile() async {
+  Future uploadFile(File imageFile) async {
+    print("in chat module path is "+imageFile.path.toString());
     String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
     StorageUploadTask uploadTask = reference.putFile(imageFile);

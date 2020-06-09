@@ -11,8 +11,10 @@ import 'location.dart';
 import 'main.dart';
 import 'dart:io';
 import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'server_controller.dart';
+
 
 class Feed extends StatefulWidget {
   _Feed createState() => _Feed();
@@ -20,7 +22,7 @@ class Feed extends StatefulWidget {
 
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
-  UserPreference filterData = null;
+  bool shouldSendRequest = false;
   List<String> feedPostsID = [];
   double num_of_return_posts =
       -1; //the initial value because at the beggining we dont now the num of posts
@@ -71,20 +73,20 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
                 Icons.filter,
               ),
               onPressed: () async {
-                filterData = await Navigator.push(
+                shouldSendRequest = await Navigator.push(
                         context,
                         MaterialPageRoute(
                             builder: (context) =>
                                 FilterPosts(currentUserModel.preferences)))
-                    as UserPreference;
-                print("back from filter page " + filterData.toString());
-                if (filterData != null) {
+                    as bool;
+                print("back from filter page shouldSendRequest " + shouldSendRequest.toString());
+                if (shouldSendRequest) {
                   setState(() {
                     feedData =
                         null; //should set feedData to null in order to stop showing same old feed
                     num_of_return_posts = -1;
                   });
-                  await _updateUserPreference();
+                  // await _updateUserPreference();
                   _getFeed();
                 }
               },
@@ -111,23 +113,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     );
   }
 
-  _updateUserPreference() async {
-    if (filterData == null) {
-      return;
-    }
-    await Firestore.instance
-        .collection("post_preferences")
-        .document(currentUserModel.id)
-        .setData({
-      "categories": filterData.categories,
-      "radius": filterData.radious,
-      "location": filterData.location,
-      "min_age": filterData.min_age,
-      "max_age": filterData.max_age
-    });
-    //need to update currentUserModel because of post preferences change
-    updateCurrentUser(currentUserModel, filterData);
-  }
+
 
   Future<Null> _refresh() async {
     print("asked for refresh give him more ");
@@ -157,7 +143,6 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     setState(() {
       num_of_return_posts = res[resIndexValue.NUM_OF_POSTS.index].toDouble();
       feedData = res[resIndexValue.POST_LIST.index];
-      filterData = null;
       feedPostsID = res[resIndexValue.POSTS_ID_LIST.index];
     });
   }

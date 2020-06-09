@@ -102,8 +102,29 @@ class UserPreference {
         " location lat: "+this.location.latitude.toString()+
         " location long: "+this.location.longitude.toString()+
         " categories: "+this.categories.toString()+
-        " radius: "+this.radious.toString();
+        " radius: "+this.radious.toInt().toString();
   }
+  bool isSameCategories(List cat1, List cat2){
+    if(cat1.length != cat2.length){
+      return false;
+    }
+    for (var item in cat1) {
+      if(!cat2.contains(item)){
+        return false;
+      }
+    }
+    return true;
+  }
+  bool isEqual(UserPreference other){
+    
+    return (this.min_age == other.min_age)
+           && (this.max_age == other.max_age)
+           && (this.radious.toInt() == other.radious.toInt())
+           && (isSameCategories(this.categories, other.categories))
+           && (this.location.latitude == other.location.latitude)
+           && (this.location.longitude == other.location.longitude);
+  }  
+  
 }
 class UserInChatList {
   final User user;
