@@ -500,7 +500,7 @@ class _HomePageState extends State<HomePage> {
         loginFinished = true;
         showRegisterWithFB = false;
         print("Showing Home Screen");
-        _downloadImage(currentUserModel.photoUrl);
+        // _downloadImage(currentUserModel.photoUrl);
       });
       await currentUserModel.setUserPref();
     }
@@ -534,18 +534,14 @@ class _HomePageState extends State<HomePage> {
     pageController.dispose();
   }
 }
-Future uploadFile(File imageFile) async {
+Future uploadFile(File imageFile, Function cbFunc) async {
     String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
     StorageUploadTask uploadTask = reference.putFile(imageFile);
     StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
 
     storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
-     String  imageUrl = downloadUrl;
-      print("uploadFile: imageUrl is imageUrl");
-            users_ref
-            .document(currentUserModel.id)
-            .updateData({"profile_pic_url":imageUrl});
+     cbFunc(downloadUrl);
     }, onError: (err) {
       print("file is  not image "+err.toString());
       // Fluttertoast.showToast(msg: 'This file is not an image');

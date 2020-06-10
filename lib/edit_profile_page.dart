@@ -1,30 +1,41 @@
+
+
 import "package:flutter/material.dart";
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import 'main.dart'; //for currentuser & google signin instance
 import 'models/user.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class EditProfilePage extends StatelessWidget {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
-
-  changeProfilePhoto(BuildContext parentContext) {
-    return showDialog(
-      context: parentContext,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Change Photo'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text(
-                    'Changing your profile photo has not been implemented yet'),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  // File imageFile;
+  changeProfilePhoto(BuildContext parentContext) async {
+    var imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
+    uploadFile(imageFile, (downloadImg) async {
+      await Firestore.instance
+          .collection("users")
+          .document(currentUserModel.id)
+          .updateData({'profile_pic_url': downloadImg});
+          // currentUserModel = downloadImg;
+          currentUserModel.setUserPhoto(downloadImg);
+    });
+    // return showDialog(
+    //   context: parentContext,
+    //   builder: (BuildContext context) {
+    //     return AlertDialog(
+    //       title: Text('Change Photo'),
+    //       content: SingleChildScrollView(
+    //         child: ListBody(
+    //           children: <Widget>[
+    //             Text(
+    //                 'Changing your profile photo has not been implemented yet'),
+    //           ],
+    //         ),
+    //       ),
+    //     );
+    //   },
+    // );
   }
 
   applyChanges() {
@@ -86,8 +97,8 @@ class EditProfilePage extends StatelessWidget {
                 ),
               ),
               FlatButton(
-                  onPressed: () {
-                    changeProfilePhoto(context);
+                  onPressed: () async{
+                    await changeProfilePhoto(context);
                   },
                   child: Text(
                     "Change Photo",
@@ -106,13 +117,10 @@ class EditProfilePage extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: MaterialButton(
-                    onPressed: () => {_logout(context)},
-                    child: Text("Logout")
-
-                )
-              )
+                  padding: const EdgeInsets.all(16.0),
+                  child: MaterialButton(
+                      onPressed: () => {_logout(context)},
+                      child: Text("Logout")))
             ],
           );
         });
@@ -128,8 +136,8 @@ class EditProfilePage extends StatelessWidget {
     currentUserModel = null;
     // Navigator.pop(context);
     Navigator.push(
-    context,
-    MaterialPageRoute(builder: (context) => HomePage()),
-  );
+      context,
+      MaterialPageRoute(builder: (context) => HomePage()),
+    );
   }
 }

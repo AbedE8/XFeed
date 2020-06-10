@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class User {
   final String email;
   final String id;
-  final String photoUrl;
+  String photoUrl;
   final String username;
   final String displayName;
   final String bio;
@@ -25,7 +25,9 @@ class User {
       this.preferences = pref;
     }
   }
-
+  void setUserPhoto(String imgPath){
+    this.photoUrl = imgPath;
+  }
   factory User.fromDocument(DocumentSnapshot document) {
     return User(
         email: document['email'],

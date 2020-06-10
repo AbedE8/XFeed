@@ -30,7 +30,6 @@ class ImagePost extends StatefulWidget {
   static String timePassed(Duration duration) {
     String suffix = " a go";
 
-
     if (duration.inDays != 0) {
       return duration.inDays.toString() + " days" + suffix;
     }
@@ -46,7 +45,8 @@ class ImagePost extends StatefulWidget {
     // var test = data.cast
     double nanotomilli = (nanoseconds / 1000000);
     double timeInMilli = (seconds * 1000) + nanotomilli;
-    DateTime postTime = DateTime.fromMillisecondsSinceEpoch(timeInMilli.toInt());
+    DateTime postTime =
+        DateTime.fromMillisecondsSinceEpoch(timeInMilli.toInt());
     return postTime;
   }
 
@@ -93,7 +93,8 @@ class ImagePost extends StatefulWidget {
         activities: data['category'],
         timeStr: timePassed(differ));
   }
- //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
+
+  //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
   static Future<ImagePost> fromID(String postID) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
     posts_reference
@@ -299,15 +300,49 @@ class _ImagePost extends State<ImagePost> {
                       mediaUrl: mediaUrl);
                 }),
             Spacer(flex: 1),
-            Row(
-              children: <Widget>[RaisedButton.icon(
-                                      onPressed: () => takeMe(),
-                                      icon: Icon(Icons.drive_eta),
-                                      label: Text('takeMe'),
-                                      color: Colors.green[50],
-                                    ) 
-                                ],
-            ),
+            Material(
+              // color: Colors.yellow[100],
+              child: InkWell(
+                borderRadius: BorderRadius.circular(50),
+                onTap: () => takeMe(),
+                splashColor: Colors.yellow[50],
+                highlightColor: Colors.yellow[50],
+                child: Container(
+                    height: 30,
+                    width: 90,
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(50),
+                      border: Border.all(color: Colors.blue[300]),
+                    ),
+                    child: Row(children: <Widget>[
+                      Icon(Icons.drive_eta),
+                      Center(
+                        child: Text("TakeMe"),
+                      ),
+                    ])),
+              ),
+            )
+            // Row(
+            //   children: <Widget>[
+            //     Column(
+            //       children: <Widget>[
+            //         IconButton(
+            //           icon: Icon(Icons.drive_eta),
+            //           onPressed: () => takeMe(),
+
+            //         ),
+            //       Text('Take Me',style: TextStyle(color: Colors.grey),)],
+            //     ),
+
+            //     // RaisedButton.icon(
+            //     //   onPressed: () => takeMe(),
+            //     //   icon: Icon(Icons.drive_eta),
+            //     //   // label: Text('takeMe'),
+            //     //   color: Colors.green[50],
+            //     // )
+            //   ],
+            // ),
           ],
         ),
         Row(
@@ -347,8 +382,8 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  takeMe(){
-
+  takeMe() {
+    print("takeMe has been pressed");
   }
 
   void _likePost(String postId2) {

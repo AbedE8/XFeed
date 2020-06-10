@@ -1,3 +1,4 @@
+import 'package:Xfeedm/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import "dart:async";
@@ -95,8 +96,7 @@ class _CommentScreenState extends State<CommentScreen> {
   }
 
   addComment(String comment) {
-    if(comment == "")
-    {
+    if (comment == "") {
       return;
     }
     _commentController.clear();
@@ -159,7 +159,15 @@ class Comment extends StatelessWidget {
     return Column(
       children: <Widget>[
         ListTile(
-          title: Text(comment),
+          title: GestureDetector(
+            child: Text(username,
+                style: TextStyle(
+                    color: Colors.black, fontWeight: FontWeight.bold)),
+            onTap: () {
+              openProfile(context, userId);
+            },
+          ),
+          subtitle: Text(comment),
           leading: CircleAvatar(
             backgroundImage: NetworkImage(avatarUrl),
           ),

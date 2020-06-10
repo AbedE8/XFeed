@@ -65,6 +65,10 @@ class _ProfilePage extends State<ProfilePage>
                     onPressed: () {
                       editPage.applyChanges();
                       Navigator.maybePop(context);
+                      setState(() {
+                        //this is used to build the screen again so the changes made in edit
+                        //take place
+                      });
                     })
               ],
             ),
