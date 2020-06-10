@@ -298,16 +298,6 @@ class _ImagePost extends State<ImagePost> {
                       ownerId: ownerId,
                       mediaUrl: mediaUrl);
                 }),
-            Spacer(flex: 1),
-            Row(
-              children: <Widget>[RaisedButton.icon(
-                                      onPressed: () => takeMe(),
-                                      icon: Icon(Icons.drive_eta),
-                                      label: Text('takeMe'),
-                                      color: Colors.green[50],
-                                    ) 
-                                ],
-            ),
           ],
         ),
         Row(
@@ -318,7 +308,17 @@ class _ImagePost extends State<ImagePost> {
                 "$likeCount likes",
                 style: boldStyle,
               ),
-            )
+            ),
+            Spacer(flex: 1),
+            Column(
+              children: <Widget>[RaisedButton.icon(
+                                      onPressed: () => takeMe(),
+                                      icon: Icon(Icons.drive_eta),
+                                      label: Text('takeMe'),
+                                      color: Colors.red[50],
+                                    ) 
+                                ],
+            ),
           ],
         ),
         Row(
@@ -332,7 +332,7 @@ class _ImagePost extends State<ImagePost> {
                 )),
             Expanded(child: Text(description)),
           ],
-        ),
+        ),       
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -348,8 +348,35 @@ class _ImagePost extends State<ImagePost> {
   }
 
   takeMe(){
-
+    showDialog(
+            context: context,
+            builder: (BuildContext context) => _buildAboutDialog(context),
+        );
   }
+
+  Widget _buildAboutDialog(BuildContext context) {
+    return new AlertDialog(
+      title: const Text('Going with:'),
+      actions: <Widget>[
+        new RaisedButton.icon(
+          onPressed: () => {runWaze()},
+          icon: Icon(Icons.drive_eta),
+          label: Text('WAZE'),
+          color: Colors.blue[100],
+        ),
+        Spacer(flex: 100),
+        new RaisedButton.icon(
+          onPressed: () => {runGett()},
+          icon: Icon(Icons.drive_eta),
+          label: Text('GETT'),
+          color: Colors.yellow[100],
+        ),
+      ],
+    );
+  }
+
+  runWaze() {print("connecting Waze");}
+  runGett() {print("connecting Gett");}
 
   void _likePost(String postId2) {
     var userId = currentUserModel.id;
