@@ -46,7 +46,7 @@ class _ActivityFeedPageState extends State<ActivityFeedPage> with AutomaticKeepA
   getFeed() async {
     List<ActivityFeedItem> items = [];
     var snap = await Firestore.instance
-        .collection('insta_a_feed')
+        .collection('activities')
         .document(currentUserModel.id)
         .collection("items")
         .orderBy("timestamp")
