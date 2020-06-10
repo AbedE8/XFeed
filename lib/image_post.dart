@@ -323,26 +323,6 @@ class _ImagePost extends State<ImagePost> {
                     ])),
               ),
             )
-            // Row(
-            //   children: <Widget>[
-            //     Column(
-            //       children: <Widget>[
-            //         IconButton(
-            //           icon: Icon(Icons.drive_eta),
-            //           onPressed: () => takeMe(),
-
-            //         ),
-            //       Text('Take Me',style: TextStyle(color: Colors.grey),)],
-            //     ),
-
-            //     // RaisedButton.icon(
-            //     //   onPressed: () => takeMe(),
-            //     //   icon: Icon(Icons.drive_eta),
-            //     //   // label: Text('takeMe'),
-            //     //   color: Colors.green[50],
-            //     // )
-            //   ],
-            // ),
           ],
         ),
         Row(
@@ -353,7 +333,7 @@ class _ImagePost extends State<ImagePost> {
                 "$likeCount likes",
                 style: boldStyle,
               ),
-            )
+            ),
           ],
         ),
         Row(
@@ -367,7 +347,7 @@ class _ImagePost extends State<ImagePost> {
                 )),
             Expanded(child: Text(description)),
           ],
-        ),
+        ),       
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -382,9 +362,41 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  takeMe() {
+  takeMe(){
     print("takeMe has been pressed");
+    showDialog(
+            context: context,
+            builder: (BuildContext context) => _buildAboutDialog(context),
+        );
   }
+
+  Widget _buildAboutDialog(BuildContext context) {
+    return new AlertDialog(
+      title: const Text('Going with:'),
+      actions: <Widget>[
+        new RaisedButton.icon(
+          onPressed: () => {runWaze()},
+          icon: Icon(Icons.drive_eta),
+          label: Text('WAZE'),
+          color: Colors.blue[100],
+          padding:  EdgeInsets.only(right: 10.0,left: 5),
+        ),
+        // Spacer(flex: 100),
+        Padding(padding: const EdgeInsets.only(right: 20.0),),
+        new RaisedButton.icon(
+          onPressed: () => {runGett()},
+          icon: Icon(Icons.local_taxi),
+          label: Text('GETT'),
+          color: Colors.yellow[100],
+          padding:  EdgeInsets.only(right: 10.0,left: 5),
+        ),
+        Padding(padding: const EdgeInsets.only(right: 20.0),),
+      ],
+    );
+  }
+
+  runWaze() {print("connecting Waze");}
+  runGett() {print("connecting Gett");}
 
   void _likePost(String postId2) {
     var userId = currentUserModel.id;
