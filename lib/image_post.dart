@@ -298,6 +298,16 @@ class _ImagePost extends State<ImagePost> {
                       ownerId: ownerId,
                       mediaUrl: mediaUrl);
                 }),
+            Spacer(flex: 1),
+            Row(
+              children: <Widget>[RaisedButton.icon(
+                                      onPressed: () => takeMe(),
+                                      icon: Icon(Icons.drive_eta),
+                                      label: Text('takeMe'),
+                                      color: Colors.green[50],
+                                    ) 
+                                ],
+            ),
           ],
         ),
         Row(
@@ -330,12 +340,15 @@ class _ImagePost extends State<ImagePost> {
                 margin: const EdgeInsets.fromLTRB(20, 5, 0, 5),
                 child: Text(
                   "$timeStr ",
-                  
                 )),
           ],
         ),
       ],
     );
+  }
+
+  takeMe(){
+
   }
 
   void _likePost(String postId2) {
