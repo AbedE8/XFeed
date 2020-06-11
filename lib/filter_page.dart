@@ -143,7 +143,7 @@ class _Filter extends State<FilterPosts> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Expanded(
-              flex: 60,
+              flex: 40,
               child: FilterMap(userPref, _filterMapController),
             ),
             Column(
@@ -161,6 +161,7 @@ class _Filter extends State<FilterPosts> {
               padding: EdgeInsets.all(5),
             ),
             Wrap(
+              spacing: 5,
               children: FeedCategory.buildCategories(
                   categories, _tappedCategory, onTappedCategory),
             ),

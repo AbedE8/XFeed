@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:Xfeedm/categories.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -147,14 +148,14 @@ class _ImagePost extends State<ImagePost> {
   final String username;
   final String location;
   final String description;
-  final List<dynamic> activities;
+  final List<dynamic> activities;//this is the same of categories, need to delete it later
   final String timeStr;
   Map likes;
   int likeCount;
   final String postId;
   bool liked;
   final String ownerId;
-
+  List<String> categories = new List();
   bool showHeart = false;
 
   TextStyle boldStyle = TextStyle(
@@ -175,7 +176,12 @@ class _ImagePost extends State<ImagePost> {
       this.ownerId,
       this.activities,
       this.timeStr});
-
+  @override
+  void initState(){
+    
+    categories = parseActivities(this.activities.toString());  
+    
+  }
   GestureDetector buildLikeIcon() {
     Color color;
     IconData icon;
@@ -253,12 +259,12 @@ class _ImagePost extends State<ImagePost> {
               subtitle: GestureDetector(
                 child: Text(this.location),
                 onTap: () {
-                  openLocationFeed(context, this.location);
+                  
                 },
               ),
-              //trailing: const Icon(Icons.more_vert),
-              trailing: Text(
-                  this.activities == null ? "NA" : this.activities.toString()),
+
+              trailing: IconButton(icon:Icon(Icons.menu),onPressed: () => openLocationFeed(context, this.location),)
+              
             );
           }
 
@@ -272,10 +278,17 @@ class _ImagePost extends State<ImagePost> {
     child: Center(child: CircularProgressIndicator()),
   );
 
+  List<String> parseActivities(String data){
+    String d = data.substring(1,data.length-1);
+    List<String> dd = d.split(',').map((e) => e.trim()).toList();
+    // List<String> to_return = new List.from(dd);
+
+    return dd;
+  }
   @override
   Widget build(BuildContext context) {
     liked = (likes[currentUserModel.id.toString()] == true);
-
+   
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -299,29 +312,41 @@ class _ImagePost extends State<ImagePost> {
                       ownerId: ownerId,
                       mediaUrl: mediaUrl);
                 }),
+            Padding(padding: EdgeInsets.only(left: 60)),
+            Wrap(
+              spacing:2,
+              children: FeedCategory.buildCirculeCategore(categories),
+            ),
             Spacer(flex: 1),
-            Material(
-              // color: Colors.yellow[100],
-              child: InkWell(
-                borderRadius: BorderRadius.circular(50),
-                onTap: () => takeMe(),
-                splashColor: Colors.yellow[50],
-                highlightColor: Colors.yellow[50],
-                child: Container(
-                    height: 30,
-                    width: 90,
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(50),
-                      border: Border.all(color: Colors.blue[300]),
-                    ),
-                    child: Row(children: <Widget>[
-                      Icon(Icons.drive_eta),
-                      Center(
-                        child: Text("TakeMe"),
-                      ),
-                    ])),
-              ),
+            // Padding(padding: EdgeInsets.only(top:5)),
+            Column(
+              // mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Padding(padding: EdgeInsets.only(top: 5)),
+                Material(
+                  // color: Colors.yellow[100],
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(50),
+                    onTap: () => takeMe(),
+                    splashColor: Colors.yellow[50],
+                    highlightColor: Colors.yellow[50],
+                    child: Container(
+                        height: 30,
+                        width: 90,
+                        decoration: BoxDecoration(
+                          color: Colors.blue[50],
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(color: Colors.blue[300]),
+                        ),
+                        child: Row(children: <Widget>[
+                          Icon(Icons.drive_eta),
+                          Center(
+                            child: Text("TakeMe"),
+                          ),
+                        ])),
+                  ),
+                ),
+              ],
             )
           ],
         ),
@@ -347,7 +372,7 @@ class _ImagePost extends State<ImagePost> {
                 )),
             Expanded(child: Text(description)),
           ],
-        ),       
+        ),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -362,12 +387,13 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  takeMe(){
+  showMe() {}
+  takeMe() {
     print("takeMe has been pressed");
     showDialog(
-            context: context,
-            builder: (BuildContext context) => _buildAboutDialog(context),
-        );
+      context: context,
+      builder: (BuildContext context) => _buildAboutDialog(context),
+    );
   }
 
   Widget _buildAboutDialog(BuildContext context) {
@@ -379,24 +405,33 @@ class _ImagePost extends State<ImagePost> {
           icon: Icon(Icons.drive_eta),
           label: Text('WAZE'),
           color: Colors.blue[100],
-          padding:  EdgeInsets.only(right: 10.0,left: 5),
+          padding: EdgeInsets.only(right: 10.0, left: 5),
         ),
         // Spacer(flex: 100),
-        Padding(padding: const EdgeInsets.only(right: 20.0),),
+        Padding(
+          padding: const EdgeInsets.only(right: 20.0),
+        ),
         new RaisedButton.icon(
           onPressed: () => {runGett()},
           icon: Icon(Icons.local_taxi),
           label: Text('GETT'),
           color: Colors.yellow[100],
-          padding:  EdgeInsets.only(right: 10.0,left: 5),
+          padding: EdgeInsets.only(right: 10.0, left: 5),
         ),
-        Padding(padding: const EdgeInsets.only(right: 20.0),),
+        Padding(
+          padding: const EdgeInsets.only(right: 20.0),
+        ),
       ],
     );
   }
 
-  runWaze() {print("connecting Waze");}
-  runGett() {print("connecting Gett");}
+  runWaze() {
+    print("connecting Waze");
+  }
+
+  runGett() {
+    print("connecting Gett");
+  }
 
   void _likePost(String postId2) {
     var userId = currentUserModel.id;
