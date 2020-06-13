@@ -10,10 +10,12 @@ import 'package:location/location.dart';
 import 'location_feed.dart';
 import 'main.dart';
 import 'dart:async';
+import 'models/user.dart';
 import 'profile_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'comment_screen.dart';
 import 'package:flare_flutter/flare_actor.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 class ImagePost extends StatefulWidget {
   ImagePost(
@@ -57,12 +59,9 @@ class ImagePost extends StatefulWidget {
     var userRef = document.data['publisher'];
     var userData = await users_reference.document(userRef).get();
     DateTime postTime = document.data['timeStamp'].toDate();
-    // DateTime postTime = DateTime.now();
-    // print("creating image of time default"+postTime.toString());
-    // print("creating image of time utc"+postTime.toUtc().toString());
-    // print("creating image of time local"+postTime.toLocal().toString());
-    // print("date now is "+DateTime.now().toString() +" post time utc"+ postTime.toUtc().toString());
-    Duration differ = DateTime.now().difference(postTime.toUtc());
+    final now = new DateTime.now();
+    Duration differ = now.difference(postTime.toUtc());
+    String timePassed = timeago.format(now.subtract(differ));
     return ImagePost(
         username: userData.data['username'],
         location: document.data['feature_name'],
@@ -72,7 +71,7 @@ class ImagePost extends StatefulWidget {
         postId: document.documentID,
         ownerId: document.data['publisher'],
         activities: document.data['category'],
-        timeStr: timePassed(differ));
+        timeStr: timePassed);
   }
 
   static Future<ImagePost> fromJSON(Map<String, dynamic> data) async {
@@ -81,10 +80,10 @@ class ImagePost extends StatefulWidget {
 
     int seconds = data['timeStamp']['_seconds'];
     int nano = data['timeStamp']['_nanoseconds'];
-
+    final now = new DateTime.now();
     DateTime postTime = fromTimestamp(seconds, nano);
-    Duration differ = DateTime.now().difference(postTime);
-
+    Duration differ = now.difference(postTime);
+    String timePassed = timeago.format(now.subtract(differ));
     return ImagePost(
         username: userData.data['username'],
         location: data['feature_name'],
@@ -94,7 +93,7 @@ class ImagePost extends StatefulWidget {
         ownerId: data['publisher'],
         postId: data['id'],
         activities: data['category'],
-        timeStr: timePassed(differ));
+        timeStr: timePassed);
   }
 
   //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
@@ -111,10 +110,10 @@ class ImagePost extends StatefulWidget {
       return 0;
     }
 // issue is below
-    var vals = likes.values;
+    var keys = likes.keys;
     int count = 0;
-    for (var val in vals) {
-      if (val == true) {
+    for (var key in keys) {
+      if (likes[key] == true) {
         count = count + 1;
       }
     }
@@ -150,7 +149,8 @@ class _ImagePost extends State<ImagePost> {
   final String username;
   final String location;
   final String description;
-  final List<dynamic> activities;//this is the same of categories, need to delete it later
+  final List<dynamic>
+      activities; //this is the same of categories, need to delete it later
   final String timeStr;
   Map likes;
   int likeCount;
@@ -179,11 +179,10 @@ class _ImagePost extends State<ImagePost> {
       this.activities,
       this.timeStr});
   @override
-  void initState(){
-    
-    categories = parseActivities(this.activities.toString());  
-    
+  void initState() {
+    categories = parseActivities(this.activities.toString());
   }
+
   GestureDetector buildLikeIcon() {
     Color color;
     IconData icon;
@@ -237,6 +236,15 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
+  Future<List<User>> getLikesUsers() async{
+    List<User> to_return = new List();
+    for (var key in this.likes.keys) {
+      if(this.likes[key] == true){
+          to_return.add(await User.fromID(key));
+      }
+    }
+    return to_return;
+  }
   buildPostHeader({String ownerId}) {
     if (ownerId == null) {
       return Text("owner error");
@@ -247,27 +255,25 @@ class _ImagePost extends State<ImagePost> {
         builder: (context, snapshot) {
           if (snapshot.data != null) {
             return ListTile(
-              leading: CircleAvatar(
-                backgroundImage: CachedNetworkImageProvider(
-                    snapshot.data.data['profile_pic_url']),
-                backgroundColor: Colors.grey,
-              ),
-              title: GestureDetector(
-                child: Text(snapshot.data.data['username'], style: boldStyle),
-                onTap: () {
-                  openProfile(context, ownerId);
-                },
-              ),
-              subtitle: GestureDetector(
-                child: Text(this.location),
-                onTap: () {
-                  
-                },
-              ),
-
-              trailing: IconButton(icon:Icon(Icons.menu),onPressed: () => openLocationFeed(context, this.location),)
-              
-            );
+                leading: CircleAvatar(
+                  backgroundImage: CachedNetworkImageProvider(
+                      snapshot.data.data['profile_pic_url']),
+                  backgroundColor: Colors.grey,
+                ),
+                title: GestureDetector(
+                  child: Text(snapshot.data.data['username'], style: boldStyle),
+                  onTap: () {
+                    openProfile(context, ownerId);
+                  },
+                ),
+                subtitle: GestureDetector(
+                  child: Text(this.location),
+                  onTap: () {},
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.menu),
+                  onPressed: () => openLocationFeed(context, this.location),
+                ));
           }
 
           // snapshot data is null here
@@ -280,17 +286,18 @@ class _ImagePost extends State<ImagePost> {
     child: Center(child: CircularProgressIndicator()),
   );
 
-  List<String> parseActivities(String data){
-    String d = data.substring(1,data.length-1);
+  List<String> parseActivities(String data) {
+    String d = data.substring(1, data.length - 1);
     List<String> dd = d.split(',').map((e) => e.trim()).toList();
     // List<String> to_return = new List.from(dd);
 
     return dd;
   }
+
   @override
   Widget build(BuildContext context) {
     liked = (likes[currentUserModel.id.toString()] == true);
-   
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -316,7 +323,7 @@ class _ImagePost extends State<ImagePost> {
                 }),
             Padding(padding: EdgeInsets.only(left: 60)),
             Wrap(
-              spacing:2,
+              spacing: 2,
               children: FeedCategory.buildCirculeCategore(categories),
             ),
             Spacer(flex: 1),
@@ -355,10 +362,68 @@ class _ImagePost extends State<ImagePost> {
         Row(
           children: <Widget>[
             Container(
-              margin: const EdgeInsets.only(left: 20.0),
-              child: Text(
-                "$likeCount likes",
-                style: boldStyle,
+              margin: const EdgeInsets.only(left: 20.0,bottom:5),
+              
+              child: GestureDetector(
+                child: Text(
+                  "$likeCount likes",
+                  style: boldStyle,
+                ),
+                onTap: () {
+                  Navigator.of(
+                    context).push(
+                    MaterialPageRoute(
+                        builder: (context) => Center(
+                              child: Scaffold(
+                                appBar: AppBar(
+                                  // leading: Container(),
+                                  title: Text('Likes',
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold)),
+                                  backgroundColor: Colors.white,
+                                ),
+                                body: Container(
+                                    child: FutureBuilder<List<User>>(
+                                  future: getLikesUsers(),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return Center(child:CircularProgressIndicator());
+                                    }
+                                    List<User> users = snapshot.data;
+                                    return ListView.builder(
+                                      padding: const EdgeInsets.all(10),
+                                      itemBuilder: (context, index) {
+                                        return Column(children:[Row(
+                                          children: <Widget>[
+                                            CircleAvatar(
+                                              backgroundImage: NetworkImage(
+                                                  users[index].photoUrl),
+                                            ),
+                                            Padding(padding: const EdgeInsets.only(left: 20.0)),
+                                            Column(children: <Widget>[GestureDetector(
+                                              child: Text(users[index].username,
+                                                  style: TextStyle(
+                                                      color: Colors.black,
+                                                      fontWeight:
+                                                          FontWeight.bold)),
+                                              onTap: () {
+                                                openProfile(
+                                                    context, users[index].id);
+                                              },
+                                            ),Text(users[index].displayName),],),
+                                            
+                                          ],
+                                        ),Divider()],);
+                                      },
+                                      itemCount: users.length,
+                                    );
+                                  },
+                                )),
+                              ),
+                            )),
+                  );
+                },
               ),
             ),
           ],

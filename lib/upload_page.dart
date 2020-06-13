@@ -65,6 +65,7 @@ class _Uploader extends State<Uploader> {
   @override
   initState() {
     suggestions = new List();
+    _streetAddresses = new List();
     initPlatformState(); //method to call location
     super.initState();
     _tappedCategories = new List(categories.length);
@@ -75,10 +76,11 @@ class _Uploader extends State<Uploader> {
     for (var j = 0; j < _tappedGenders.length; j++) {
       _tappedGenders[j] = true; //on by default
     }
-    _rangeValue = new RangeValues(FilterPosts.minAge.toDouble(), FilterPosts.maxAge.toDouble());
+    _rangeValue = new RangeValues(
+        FilterPosts.minAge.toDouble(), FilterPosts.maxAge.toDouble());
     _rangeLabels = new RangeLabels(
         FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
-    _streetAddresses = new List();
+    
     textField = SimpleAutoCompleteTextField(
       key: autoCompleteKey,
       decoration: new InputDecoration(
@@ -96,8 +98,9 @@ class _Uploader extends State<Uploader> {
   }
 
   updateText(String text) async {
-    currentText = text;
-    if (validateUserLocationInput(text)) {
+    locationController.text = locationController.text.trim();
+    currentText = text.trim();
+    if (validateUserLocationInput(currentText)) {
       setState(() {
         locationTapped = true;
         _valideLocation = true;
@@ -108,22 +111,22 @@ class _Uploader extends State<Uploader> {
         _valideLocation = false;
       });
     }
-    print("updateText " + text);
-    if(text != ""){
-      List<Map<String, dynamic>> data = await fetchDataAutocomplete(text);
+    print("updateText " + currentText.length.toString());
+    if (currentText.isNotEmpty) {
+      List<Map<String, dynamic>> data =
+          await fetchDataAutocomplete(currentText);
       buildSuggestions(data, 'description');
-    }else{
+    } else {
       suggestions.clear();
       textField.updateSuggestions(suggestions);
     }
-
   }
 
   buildSuggestions(List<Map<String, dynamic>> data, String parser) {
     suggestions.clear();
     for (var item in data) {
-      if (item.containsKey(parser) && !suggestions.contains(item[parser]) ) {
-        print("adding  "+parser + item[parser]);
+      if (item.containsKey(parser) && !suggestions.contains(item[parser])) {
+        print("adding  " + parser + item[parser]);
         suggestions.add(item[parser]);
       }
     }
@@ -134,11 +137,15 @@ class _Uploader extends State<Uploader> {
   Future<List<Map<String, dynamic>>> fetchDataAutocomplete(text) async {
     String url =
         "https://maps.googleapis.com/maps/api/place/autocomplete/json?" +
-            "input=" + text + //text to be completed
-            "&types=establishment"+
-            "&location=${coordinate.latitude},${coordinate.longitude}"+
-            "&radius=" + _placesWithenRadius.toString() + "&strictbounds"+
-            "&key=" + kGoogleApiKey;
+            "input=" +
+            text + //text to be completed
+            "&types=establishment" +
+            "&location=${coordinate.latitude},${coordinate.longitude}" +
+            "&radius=" +
+            _placesWithenRadius.toString() +
+            "&strictbounds" +
+            "&key=" +
+            kGoogleApiKey;
     List<Map<String, dynamic>> data = await getDataFromUrl(url, 'predictions');
     print("recieved data length is " + data.length.toString());
     return data;
@@ -173,32 +180,37 @@ class _Uploader extends State<Uploader> {
     Coordinates latling = await getUserCordinate();
     googleNearbyPlaces[coordinate.hashCode] = null;
     coordinate = latling;
-    // await getNearlocation(); //No need for nearby location due to autocomplete
+    await getNearlocation(); //No need for nearby location due to autocomplete
     // suggestions.addAll(iterable)
     await getStreetLocation(latling);
     setState(() {
       address = first;
     });
   }
-  getStreetLocation(Coordinates latling) async{
-    String url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=${latling.latitude},${latling.longitude}"+
-    "&result_type=street_address"+
-    "&key="+kGoogleApiKey;
+
+  getStreetLocation(Coordinates latling) async {
+    String url =
+        "https://maps.googleapis.com/maps/api/geocode/json?latlng=${latling.latitude},${latling.longitude}" +
+            "&result_type=street_address" +
+            "&key=" +
+            kGoogleApiKey;
     List<Map<String, dynamic>> data = await getDataFromUrl(url, 'results');
     print("recieved data length is " + data.length.toString());
     for (var item in data) {
       // print("formatted addres "+item['formatted_address']);
-      if(item.containsKey('formatted_address')){
-        print("adding formatted addres "+item['formatted_address']);
+      if (item.containsKey('formatted_address')) {
+        print("adding formatted addres " + item['formatted_address']);
         _streetAddresses.add(item['formatted_address']);
       }
-        
     }
+    setState(() {
+    });
   }
+
   bool canPost() {
     return (locationTapped &&
-        (numTappedCategories > 0) &&
-        (numTappedGenders > 0)) && 
+            (numTappedCategories > 0) &&
+            (numTappedGenders > 0)) &&
         !uploading;
   }
 
@@ -243,6 +255,39 @@ class _Uploader extends State<Uploader> {
                 child: textField,
               ),
             ),
+            Divider(),
+            (_streetAddresses.length == 0)
+                ? Container()
+                : Container(child:ListView.builder(
+                  
+                  scrollDirection:Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      print("length is "+_streetAddresses.length.toString());
+                      if (_streetAddresses != null &&
+                          _streetAddresses.length != 0) {
+                        return buildLocationButton(_streetAddresses[index]);
+                      } else {
+                        return Container();
+                      }
+                    },
+                    itemCount: _streetAddresses.length,
+                  ),height: 30,),
+            // // : SingleChildScrollView(
+            //     scrollDirection: Axis.horizontal,
+            //     padding: EdgeInsets.only(right: 5.0, left: 5.0, top: 5),
+            //     // child: ListView.builder(
+            //     //   itemBuilder: (context, index) {
+            //     //     if (_streetAddresses != null &&
+            //     //         _streetAddresses.length != 0) {
+            //     //       return buildLocationButton(_streetAddresses[index]);
+            //     //     } else {
+            //     //       return Container();
+            //     //     }
+            //     //   },
+            //     //   itemCount: _streetAddresses.length,
+            //     // ),
+            //     child: Container(child:ListView(scrollDirection:Axis.horizontal,children:[Text("hello"),Text("ok"),Text("ho"),Text("o;ssksk")])),
+            // ),
             Divider(),
             Padding(
                 padding: EdgeInsets.all(10),
@@ -484,6 +529,14 @@ class _Uploader extends State<Uploader> {
     return list_data;
   }
 
+  getCurrentAddresLength() {
+    int loc_to_str = coordinate.hashCode;
+    if (googleNearbyPlaces[loc_to_str] != null) {
+      return googleNearbyPlaces[loc_to_str].length;
+    }
+    return 0;
+  }
+
   getNearlocation() async {
     int loc_to_str = coordinate.hashCode;
 
@@ -491,7 +544,8 @@ class _Uploader extends State<Uploader> {
       String url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?' +
           'location=${coordinate.latitude},${coordinate.longitude}&rankby=distance&key=' +
           kGoogleApiKey;
-      List<Map<String, dynamic>> list_data = await getDataFromUrl(url,'results');
+      List<Map<String, dynamic>> list_data =
+          await getDataFromUrl(url, 'results');
       googleNearbyPlaces[loc_to_str] = list_data;
     } else {
       print("No need to send request to google");

@@ -28,8 +28,8 @@ class FeedCategory {
 
   static List<String> genderNames = ["female", "male"];
   static List<FeedCategory> genders = <FeedCategory>[
-    FeedCategory(genderNames[0], Icon(Icons.pregnant_woman), Colors.red),
-    FeedCategory(genderNames[1], Icon(Icons.person), Colors.pink)
+    FeedCategory(genderNames[0], Icon(Icons.pregnant_woman), Colors.grey),
+    FeedCategory(genderNames[1], Icon(Icons.person), Colors.grey)
   ];
 
   static List<Widget> buildCategories(List<FeedCategory> categories_to_build,
@@ -84,7 +84,6 @@ class FeedCategory {
 
   static List<Widget> buildCirculeCategore(List<String> categoriesName) {
     
-    print("recieved list " + categoriesName.toString());
     List<Widget> result = new List(categoriesName.length);
     for (var i = 0; i < categoriesName.length; i++) {
       FeedCategory currentCat = getCategoryFromName(categoriesName[i]);
