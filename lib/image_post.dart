@@ -27,23 +27,22 @@ class ImagePost extends StatefulWidget {
       this.postId,
       this.ownerId,
       this.activities,
-      this.timeStr});
+      this.timeStr,
+      this.numComments});
 
   static var users_reference = Firestore.instance.collection('users');
   static var posts_reference = Firestore.instance.collection('posts');
 
-  static String timePassed(Duration duration) {
-    String suffix = " a go";
-
-    if (duration.inDays != 0) {
-      return duration.inDays.toString() + " days" + suffix;
+  static Future<int> getCommentsCount(String postId) async {
+    QuerySnapshot data = await Firestore.instance
+        .collection("all_comments")
+        .document(postId)
+        .collection("comments")
+        .getDocuments();
+    if (data.documents != null) {
+      return data.documents.length;
     }
-    if (duration.inHours != 0) {
-      return duration.inHours.toString() + " hours" + suffix;
-    }
-    if (duration.inMinutes != 0) {
-      return duration.inMinutes.toString() + " mins" + suffix;
-    }
+    return 0;
   }
 
   static DateTime fromTimestamp(int seconds, int nanoseconds) {
@@ -62,6 +61,7 @@ class ImagePost extends StatefulWidget {
     final now = new DateTime.now();
     Duration differ = now.difference(postTime.toUtc());
     String timePassed = timeago.format(now.subtract(differ));
+    int numComments = await getCommentsCount(document.documentID);
     return ImagePost(
         username: userData.data['username'],
         location: document.data['feature_name'],
@@ -71,7 +71,8 @@ class ImagePost extends StatefulWidget {
         postId: document.documentID,
         ownerId: document.data['publisher'],
         activities: document.data['category'],
-        timeStr: timePassed);
+        timeStr: timePassed,
+        numComments: numComments);
   }
 
   static Future<ImagePost> fromJSON(Map<String, dynamic> data) async {
@@ -84,6 +85,7 @@ class ImagePost extends StatefulWidget {
     DateTime postTime = fromTimestamp(seconds, nano);
     Duration differ = now.difference(postTime);
     String timePassed = timeago.format(now.subtract(differ));
+    int numComments = await getCommentsCount(data['id']);
     return ImagePost(
         username: userData.data['username'],
         location: data['feature_name'],
@@ -93,7 +95,8 @@ class ImagePost extends StatefulWidget {
         ownerId: data['publisher'],
         postId: data['id'],
         activities: data['category'],
-        timeStr: timePassed);
+        timeStr: timePassed,
+        numComments: numComments);
   }
 
   //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
@@ -130,6 +133,7 @@ class ImagePost extends StatefulWidget {
   final String postId;
   final String ownerId;
   final activities;
+  final int numComments;
   // FloatingActionButton loc = new FloatingActionButton(onPressed: null)
   _ImagePost createState() => _ImagePost(
       mediaUrl: this.mediaUrl,
@@ -141,7 +145,8 @@ class ImagePost extends StatefulWidget {
       ownerId: this.ownerId,
       postId: this.postId,
       activities: this.activities,
-      timeStr: timeStr);
+      timeStr: timeStr,
+      numComments: this.numComments);
 }
 
 class _ImagePost extends State<ImagePost> {
@@ -152,6 +157,7 @@ class _ImagePost extends State<ImagePost> {
   final List<dynamic>
       activities; //this is the same of categories, need to delete it later
   final String timeStr;
+  final int numComments;
   Map likes;
   int likeCount;
   final String postId;
@@ -177,7 +183,8 @@ class _ImagePost extends State<ImagePost> {
       this.likeCount,
       this.ownerId,
       this.activities,
-      this.timeStr});
+      this.timeStr,
+      this.numComments});
   @override
   void initState() {
     categories = parseActivities(this.activities.toString());
@@ -236,15 +243,16 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  Future<List<User>> getLikesUsers() async{
+  Future<List<User>> getLikesUsers() async {
     List<User> to_return = new List();
     for (var key in this.likes.keys) {
-      if(this.likes[key] == true){
-          to_return.add(await User.fromID(key));
+      if (this.likes[key] == true) {
+        to_return.add(await User.fromID(key));
       }
     }
     return to_return;
   }
+
   buildPostHeader({String ownerId}) {
     if (ownerId == null) {
       return Text("owner error");
@@ -362,16 +370,14 @@ class _ImagePost extends State<ImagePost> {
         Row(
           children: <Widget>[
             Container(
-              margin: const EdgeInsets.only(left: 20.0,bottom:5),
-              
+              margin: const EdgeInsets.only(left: 20.0, bottom: 5),
               child: GestureDetector(
                 child: Text(
                   "$likeCount likes",
                   style: boldStyle,
                 ),
                 onTap: () {
-                  Navigator.of(
-                    context).push(
+                  Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (context) => Center(
                               child: Scaffold(
@@ -388,33 +394,50 @@ class _ImagePost extends State<ImagePost> {
                                   future: getLikesUsers(),
                                   builder: (context, snapshot) {
                                     if (!snapshot.hasData) {
-                                      return Center(child:CircularProgressIndicator());
+                                      return Center(
+                                          child: CircularProgressIndicator());
                                     }
                                     List<User> users = snapshot.data;
                                     return ListView.builder(
                                       padding: const EdgeInsets.all(10),
                                       itemBuilder: (context, index) {
-                                        return Column(children:[Row(
-                                          children: <Widget>[
-                                            CircleAvatar(
-                                              backgroundImage: NetworkImage(
-                                                  users[index].photoUrl),
+                                        return Column(
+                                          children: [
+                                            Row(
+                                              children: <Widget>[
+                                                CircleAvatar(
+                                                  backgroundImage: NetworkImage(
+                                                      users[index].photoUrl),
+                                                ),
+                                                Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            left: 20.0)),
+                                                Column(
+                                                  children: <Widget>[
+                                                    GestureDetector(
+                                                      child: Text(
+                                                          users[index].username,
+                                                          style: TextStyle(
+                                                              color:
+                                                                  Colors.black,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold)),
+                                                      onTap: () {
+                                                        openProfile(context,
+                                                            users[index].id);
+                                                      },
+                                                    ),
+                                                    Text(users[index]
+                                                        .displayName),
+                                                  ],
+                                                ),
+                                              ],
                                             ),
-                                            Padding(padding: const EdgeInsets.only(left: 20.0)),
-                                            Column(children: <Widget>[GestureDetector(
-                                              child: Text(users[index].username,
-                                                  style: TextStyle(
-                                                      color: Colors.black,
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                              onTap: () {
-                                                openProfile(
-                                                    context, users[index].id);
-                                              },
-                                            ),Text(users[index].displayName),],),
-                                            
+                                            Divider()
                                           ],
-                                        ),Divider()],);
+                                        );
                                       },
                                       itemCount: users.length,
                                     );
@@ -440,6 +463,27 @@ class _ImagePost extends State<ImagePost> {
             Expanded(child: Text(description)),
           ],
         ),
+        this.numComments == 0
+            ? Container()
+            : Row(crossAxisAlignment: CrossAxisAlignment.start,
+              
+             children: [
+               Container(
+                 margin: const EdgeInsets.fromLTRB(20, 5, 0, 5),
+                 child: GestureDetector(
+                  child: Text(
+                    "View all ${this.numComments} comments...",
+                  ),
+                  onTap: () {
+                    goToComments(
+                        context: context,
+                        postId: postId,
+                        ownerId: ownerId,
+                        mediaUrl: mediaUrl);
+                  },
+                ),)
+                
+              ]),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
@@ -491,11 +535,18 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  void runWaze(location) async{
-    var snapGeoLocationDB = await Firestore.instance.collection("geoLocation").where("d.name", isEqualTo: location).getDocuments();
-    GeoPoint locationGeoPoint = snapGeoLocationDB.documents[0].data['d']['coordinates'];
-    var url = 'https://www.waze.com/ul?ll=' + locationGeoPoint.latitude.toString() + '%2C'
-                                                                    + locationGeoPoint.longitude.toString() + '&navigate=yes&zoom=17';
+  void runWaze(location) async {
+    var snapGeoLocationDB = await Firestore.instance
+        .collection("geoLocation")
+        .where("d.name", isEqualTo: location)
+        .getDocuments();
+    GeoPoint locationGeoPoint =
+        snapGeoLocationDB.documents[0].data['d']['coordinates'];
+    var url = 'https://www.waze.com/ul?ll=' +
+        locationGeoPoint.latitude.toString() +
+        '%2C' +
+        locationGeoPoint.longitude.toString() +
+        '&navigate=yes&zoom=17';
     if (await canLaunch(url)) {
       await launch(url);
     } else {
@@ -506,21 +557,34 @@ class _ImagePost extends State<ImagePost> {
   void runGett(dropoff_location) async {
     Location location = Location();
     LocationData pickupLocation = await location.getLocation();
-    var snapGeoLocationDB = await Firestore.instance.collection("geoLocation").where("d.name", isEqualTo: dropoff_location).getDocuments();
+    var snapGeoLocationDB = await Firestore.instance
+        .collection("geoLocation")
+        .where("d.name", isEqualTo: dropoff_location)
+        .getDocuments();
     GeoPoint dropOff = snapGeoLocationDB.documents[0].data['d']['coordinates'];
-    String url = 'gett://order?pickup_latitude=' + pickupLocation.latitude.toString() + '&pickup_longitude=' + pickupLocation.longitude.toString() + '&dropoff_latitude='
-            + dropOff.latitude.toString() + '&dropoff_longitude=' + dropOff.longitude.toString();
-    String urlAndroidStore = "https://play.google.com/store/apps/details?id=com.gettaxi.android";
-    String urlIosStore = "https://itunes.apple.com/us/app/gett-nyc-black-car/id449655162?mt=8";
+    String url = 'gett://order?pickup_latitude=' +
+        pickupLocation.latitude.toString() +
+        '&pickup_longitude=' +
+        pickupLocation.longitude.toString() +
+        '&dropoff_latitude=' +
+        dropOff.latitude.toString() +
+        '&dropoff_longitude=' +
+        dropOff.longitude.toString();
+    String urlAndroidStore =
+        "https://play.google.com/store/apps/details?id=com.gettaxi.android";
+    String urlIosStore =
+        "https://itunes.apple.com/us/app/gett-nyc-black-car/id449655162?mt=8";
     if (await canLaunch(url)) {
       print(url);
       await launch(url);
     } else {
       if (Platform.isAndroid) {
-        print('Gett is not currently installed on your phone, opening Play Store.') ;
+        print(
+            'Gett is not currently installed on your phone, opening Play Store.');
         await launch(urlAndroidStore);
       } else if (Platform.isIOS) {
-        print('Gett is not currently installed on your phone, opening App store.') ;
+        print(
+            'Gett is not currently installed on your phone, opening App store.');
         await launch(urlIosStore);
       }
     }
