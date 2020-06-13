@@ -1,10 +1,12 @@
 import 'dart:convert';
-
+import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:Xfeedm/categories.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:location/location.dart';
 import 'location_feed.dart';
 import 'main.dart';
 import 'dart:async';
@@ -387,7 +389,6 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  showMe() {}
   takeMe() {
     print("takeMe has been pressed");
     showDialog(
@@ -401,7 +402,7 @@ class _ImagePost extends State<ImagePost> {
       title: const Text('Going with:'),
       actions: <Widget>[
         new RaisedButton.icon(
-          onPressed: () => {runWaze()},
+          onPressed: () => {runWaze(this.location)},
           icon: Icon(Icons.drive_eta),
           label: Text('WAZE'),
           color: Colors.blue[100],
@@ -412,7 +413,7 @@ class _ImagePost extends State<ImagePost> {
           padding: const EdgeInsets.only(right: 20.0),
         ),
         new RaisedButton.icon(
-          onPressed: () => {runGett()},
+          onPressed: () => {runGett(this.location)},
           icon: Icon(Icons.local_taxi),
           label: Text('GETT'),
           color: Colors.yellow[100],
@@ -425,12 +426,39 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  runWaze() {
-    print("connecting Waze");
+  void runWaze(location) async{
+    var snapGeoLocationDB = await Firestore.instance.collection("geoLocation").where("d.name", isEqualTo: location).getDocuments();
+    GeoPoint locationGeoPoint = snapGeoLocationDB.documents[0].data['d']['coordinates'];
+    var url = 'https://www.waze.com/ul?ll=' + locationGeoPoint.latitude.toString() + '%2C'
+                                                                    + locationGeoPoint.longitude.toString() + '&navigate=yes&zoom=17';
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      throw 'Could not launch $url';
+    }
   }
 
-  runGett() {
-    print("connecting Gett");
+  void runGett(dropoff_location) async {
+    Location location = Location();
+    LocationData pickupLocation = await location.getLocation();
+    var snapGeoLocationDB = await Firestore.instance.collection("geoLocation").where("d.name", isEqualTo: dropoff_location).getDocuments();
+    GeoPoint dropOff = snapGeoLocationDB.documents[0].data['d']['coordinates'];
+    String url = 'gett://order?pickup_latitude=' + pickupLocation.latitude.toString() + '&pickup_longitude=' + pickupLocation.longitude.toString() + '&dropoff_latitude='
+            + dropOff.latitude.toString() + '&dropoff_longitude=' + dropOff.longitude.toString();
+    String urlAndroidStore = "https://play.google.com/store/apps/details?id=com.gettaxi.android";
+    String urlIosStore = "https://itunes.apple.com/us/app/gett-nyc-black-car/id449655162?mt=8";
+    if (await canLaunch(url)) {
+      print(url);
+      await launch(url);
+    } else {
+      if (Platform.isAndroid) {
+        print('Gett is not currently installed on your phone, opening Play Store.') ;
+        await launch(urlAndroidStore);
+      } else if (Platform.isIOS) {
+        print('Gett is not currently installed on your phone, opening App store.') ;
+        await launch(urlIosStore);
+      }
+    }
   }
 
   void _likePost(String postId2) {
