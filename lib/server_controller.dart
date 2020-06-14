@@ -40,7 +40,7 @@ class ServerController{
         //print("num_of_posts " + data_in_json['num_of_posts'].toString());
         List<Map<String, dynamic>> data = data_in_json['posts'].cast<Map<String, dynamic>>();
         if (validate(data_in_json) == true) {
-          Map<String, dynamic> parsedFeed = await parseFeedFromJson(data_in_json);
+          Map<String, dynamic> parsedFeed = await parseFeedFromJson(data_in_json, true);
           num_of_posts = data_in_json['num_of_posts'];
           listOfPosts = parsedFeed['posts'];
           postsID = parsedFeed['postsId'];
@@ -74,7 +74,7 @@ class ServerController{
             data_in_json['posts'].cast<Map<String, dynamic>>();
         if (validate(data_in_json) == true) {
           Map<String, dynamic> parsedFeed =
-              await parseFeedFromJson(data_in_json);
+              await parseFeedFromJson(data_in_json, false);
           return parsedFeed;
         } else {
           print("data from server failed in validation");
@@ -123,7 +123,7 @@ class ServerController{
     }
   }
 
-  Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json) async {
+  Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json, bool showLocationFeedOptionOnPosts) async {
     int num_of_posts = data_in_json['num_of_posts'];
     List<Map<String, dynamic>> posts =
         data_in_json['posts'].cast<Map<String, dynamic>>();
@@ -132,7 +132,7 @@ class ServerController{
     var i;
 
     for (i = 0; i < num_of_posts; i++) {
-      listOfPosts.add(await ImagePost.fromJSON(posts[i]));
+      listOfPosts.add(await ImagePost.fromJSON(posts[i], showLocationFeedOptionOnPosts));
     }
     for (var j = i; j < posts.length; j++) {
       listOfPostsId.add(posts[j]['post_id']);

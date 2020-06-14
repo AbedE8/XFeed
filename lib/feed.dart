@@ -47,7 +47,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
           alignment: FractionalOffset.center,
           child: Text("No posts to show", style: TextStyle(fontSize: 20)));
     } else if (feedData != null) {
-      return FeedListView(posts: feedData, postsID: feedPostsID);
+      return FeedListView(posts: feedData, postsID: feedPostsID, showLocationFeedOptionOnPosts: true);
     } else {
       return Container(
           alignment: FractionalOffset.center,
@@ -153,10 +153,10 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     var i;
 
     for (i = 0; i < num_of_posts; i++) {
-      listOfPosts.add(await ImagePost.fromJSON(feedData[i]));
+      listOfPosts.add(await ImagePost.fromJSON(feedData[i], true));
     }
     for (var j = i; j < feedData.length; j++) {
-      listOfPosts.add(await ImagePost.fromID(feedData[j]['post_id']));
+      listOfPosts.add(await ImagePost.fromID(feedData[j]['post_id'], true));
     }
 
     return listOfPosts;

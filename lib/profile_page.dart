@@ -119,7 +119,7 @@ class _ProfilePage extends State<ProfilePage>
       //     .getDocuments();
       for (var doc in _userPosts) {
         // print("post "+doc.data.toString());
-        posts.add(await ImagePost.fromDocument(doc));
+        posts.add(await ImagePost.fromDocument(doc, true));
       }
       // print()
       //  setState(() {
@@ -365,7 +365,7 @@ class ImageTile extends StatelessWidget {
   ImageTile(this.imagePost);
 
   getImagePost(DocumentSnapshot imageDocument) async {
-    return await ImagePost.fromDocument(imageDocument);
+    return await ImagePost.fromDocument(imageDocument, true);
   }
 
   clickedImage(BuildContext context) {

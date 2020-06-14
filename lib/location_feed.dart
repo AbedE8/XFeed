@@ -54,7 +54,7 @@ class _LocationFeedPage extends State<LocationFeedPage> {
                     listOfPosts = locationPosts['posts'];
                     postsID = locationPosts['postsId'];
 
-                    return FeedListView(posts: listOfPosts, postsID: postsID);
+                    return FeedListView(posts: listOfPosts, postsID: postsID, showLocationFeedOptionOnPosts: false);
                   }
 
                   print("failed to get data from server.");

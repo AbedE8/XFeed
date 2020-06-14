@@ -28,7 +28,8 @@ class ImagePost extends StatefulWidget {
       this.ownerId,
       this.activities,
       this.timeStr,
-      this.numComments});
+      this.numComments,
+      this.whithLocationFeedMenu});
 
   static var users_reference = Firestore.instance.collection('users');
   static var posts_reference = Firestore.instance.collection('posts');
@@ -54,7 +55,7 @@ class ImagePost extends StatefulWidget {
     return postTime;
   }
 
-  static Future<ImagePost> fromDocument(DocumentSnapshot document) async {
+  static Future<ImagePost> fromDocument(DocumentSnapshot document, bool showLocationFeedOptionOnPosts) async {
     var userRef = document.data['publisher'];
     var userData = await users_reference.document(userRef).get();
     DateTime postTime = document.data['timeStamp'].toDate();
@@ -72,10 +73,11 @@ class ImagePost extends StatefulWidget {
         ownerId: document.data['publisher'],
         activities: document.data['category'],
         timeStr: timePassed,
-        numComments: numComments);
+        numComments: numComments,
+        whithLocationFeedMenu: showLocationFeedOptionOnPosts);
   }
 
-  static Future<ImagePost> fromJSON(Map<String, dynamic> data) async {
+  static Future<ImagePost> fromJSON(Map<String, dynamic> data, bool showLocationFeedOptionOnPosts) async {
     var userRef = data['publisher'];
     DocumentSnapshot userData = await users_reference.document(userRef).get();
 
@@ -96,16 +98,17 @@ class ImagePost extends StatefulWidget {
         postId: data['id'],
         activities: data['category'],
         timeStr: timePassed,
-        numComments: numComments);
+        numComments: numComments,
+        whithLocationFeedMenu: showLocationFeedOptionOnPosts);
   }
 
   //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
-  static Future<ImagePost> fromID(String postID) async {
+  static Future<ImagePost> fromID(String postID, bool showLocationFeedOptionOnPosts) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
     posts_reference
         .document(postID)
         .updateData({'views': FieldValue.increment(1)});
-    return await fromDocument(postData);
+    return await fromDocument(postData, showLocationFeedOptionOnPosts);
   }
 
   int getLikeCount(var likes) {
@@ -134,6 +137,7 @@ class ImagePost extends StatefulWidget {
   final String ownerId;
   final activities;
   final int numComments;
+  final bool whithLocationFeedMenu;
   // FloatingActionButton loc = new FloatingActionButton(onPressed: null)
   _ImagePost createState() => _ImagePost(
       mediaUrl: this.mediaUrl,
@@ -146,7 +150,8 @@ class ImagePost extends StatefulWidget {
       postId: this.postId,
       activities: this.activities,
       timeStr: timeStr,
-      numComments: this.numComments);
+      numComments: this.numComments,
+      whithLocationFeedMenu: this.whithLocationFeedMenu);
 }
 
 class _ImagePost extends State<ImagePost> {
@@ -155,9 +160,10 @@ class _ImagePost extends State<ImagePost> {
   final String location;
   final String description;
   final List<dynamic>
-      activities; //this is the same of categories, need to delete it later
+  activities; //this is the same of categories, need to delete it later
   final String timeStr;
   final int numComments;
+  final bool whithLocationFeedMenu;
   Map likes;
   int likeCount;
   final String postId;
@@ -184,7 +190,8 @@ class _ImagePost extends State<ImagePost> {
       this.ownerId,
       this.activities,
       this.timeStr,
-      this.numComments});
+      this.numComments,
+      this.whithLocationFeedMenu});
   @override
   void initState() {
     categories = parseActivities(this.activities.toString());
@@ -278,10 +285,11 @@ class _ImagePost extends State<ImagePost> {
                   child: Text(this.location),
                   onTap: () {},
                 ),
-                trailing: IconButton(
-                  icon: Icon(Icons.menu),
-                  onPressed: () => openLocationFeed(context, this.location),
-                ));
+                trailing: this.whithLocationFeedMenu ? IconButton(
+                    icon: Icon(Icons.menu),
+                    onPressed: this.whithLocationFeedMenu ? () => openLocationFeed(context, this.location): (){},
+                  ) : null
+                );
           }
 
           // snapshot data is null here
@@ -675,13 +683,14 @@ class _ImagePost extends State<ImagePost> {
 
 class ImagePostFromId extends StatelessWidget {
   final String id;
+  final bool whithLocationFeedMenu;
 
-  const ImagePostFromId({this.id});
+  const ImagePostFromId({this.id, this.whithLocationFeedMenu});
 
   getImagePost() async {
     var document =
         await Firestore.instance.collection('posts').document(id).get();
-    return ImagePost.fromDocument(document);
+    return ImagePost.fromDocument(document, this.whithLocationFeedMenu);
   }
 
   @override
