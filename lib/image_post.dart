@@ -508,25 +508,41 @@ class _ImagePost extends State<ImagePost> {
 
   Widget _buildAboutDialog(BuildContext context) {
     return new AlertDialog(
-      title: const Text('Going with:'),
+      // title: const Text('Going with:'),
       actions: <Widget>[
-        new RaisedButton.icon(
+        new RaisedButton(
+          elevation: 0.0,
           onPressed: () => {runWaze(this.location)},
-          icon: Icon(Icons.drive_eta),
-          label: Text('WAZE'),
-          color: Colors.blue[100],
-          padding: EdgeInsets.only(right: 10.0, left: 5),
+          child: new Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              new Image.asset(
+                'assets/images/waze-logo.jpg',
+                height: 90.0,
+                width: 90.0,
+              ),
+            ],
+          ),
+          color: Colors.white
         ),
-        // Spacer(flex: 100),
-        Padding(
-          padding: const EdgeInsets.only(right: 20.0),
-        ),
-        new RaisedButton.icon(
+        // Padding(
+        //   padding: const EdgeInsets.only(right: 0.0),
+        // ),
+        new RaisedButton(
+          elevation: 0.0,
           onPressed: () => {runGett(this.location)},
-          icon: Icon(Icons.local_taxi),
-          label: Text('GETT'),
-          color: Colors.yellow[100],
-          padding: EdgeInsets.only(right: 10.0, left: 5),
+          child: new Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              new Image.asset(
+                'assets/images/Gett_logo1.png',
+                height: 90.0,
+                width: 100.0,
+                fit: BoxFit.cover,
+              ),
+            ],
+          ),
+          color: Colors.white
         ),
         Padding(
           padding: const EdgeInsets.only(right: 20.0),

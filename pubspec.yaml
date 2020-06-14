@@ -61,6 +61,8 @@ flutter:
     - asset: assets/fonts/Billabong.ttf
   assets:
   - assets/images/google_signin_button.png
+  - assets/images/waze-logo.jpg
+  - assets/images/Gett_logo1.png
   - assets/flare/Like.flr
   - assets/images/FB_image.png
   - images/img_not_available.jpeg
