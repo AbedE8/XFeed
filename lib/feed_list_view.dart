@@ -6,11 +6,11 @@ import 'image_post.dart';
 class FeedListView extends StatefulWidget {
   final List<ImagePost> posts;
   final List<String> postsID;
-  final bool showLocationFeedOptionOnPosts;
-  const FeedListView({Key key, this.posts, this.postsID, this.showLocationFeedOptionOnPosts}) : super(key: key);
+  final bool itsLocationFeed;
+  const FeedListView({Key key, this.posts, this.postsID, this.itsLocationFeed}) : super(key: key);
   @override
   _MyFeedListViewState createState() =>
-      new _MyFeedListViewState(this.posts, this.postsID, this.showLocationFeedOptionOnPosts);
+      new _MyFeedListViewState(this.posts, this.postsID, this.itsLocationFeed);
 }
 
 class _MyFeedListViewState extends State<FeedListView> {
@@ -19,11 +19,11 @@ class _MyFeedListViewState extends State<FeedListView> {
   ScrollController controller;
   static const int postsToFetch = 1;
   static const int initPostsToFetch = 3;
-  final bool showLocationFeedOptionOnPosts;
+  final bool itsLocationFeed;
   
   // List<String> items = new List.generate(100, (index) => 'Hello $index');
 
-  _MyFeedListViewState(this.posts, this.postsID, this.showLocationFeedOptionOnPosts);
+  _MyFeedListViewState(this.posts, this.postsID, this.itsLocationFeed);
 
   @override
   void initState() {
@@ -56,7 +56,7 @@ class _MyFeedListViewState extends State<FeedListView> {
     postsID.removeRange(0, num_posts_to_fetch);
     List<ImagePost> to_return = [];
     for (var id in ids) {
-      to_return.add(await ImagePost.fromID(id, this.showLocationFeedOptionOnPosts));
+      to_return.add(await ImagePost.fromID(id, this.itsLocationFeed));
     }
     return to_return;
   }
