@@ -80,7 +80,7 @@ class _Uploader extends State<Uploader> {
         FilterPosts.minAge.toDouble(), FilterPosts.maxAge.toDouble());
     _rangeLabels = new RangeLabels(
         FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
-    
+
     textField = SimpleAutoCompleteTextField(
       key: autoCompleteKey,
       decoration: new InputDecoration(
@@ -203,8 +203,7 @@ class _Uploader extends State<Uploader> {
         _streetAddresses.add(item['formatted_address']);
       }
     }
-    setState(() {
-    });
+    setState(() {});
   }
 
   bool canPost() {
@@ -258,37 +257,30 @@ class _Uploader extends State<Uploader> {
             Divider(),
             (_streetAddresses.length == 0)
                 ? Container()
-                : Container(child:ListView.builder(
-                  
-                  scrollDirection:Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      print("length is "+_streetAddresses.length.toString());
-                      if (_streetAddresses != null &&
-                          _streetAddresses.length != 0) {
-                        return buildLocationButton(_streetAddresses[index]);
-                      } else {
-                        return Container();
-                      }
-                    },
-                    itemCount: _streetAddresses.length,
-                  ),height: 30,),
-            // // : SingleChildScrollView(
-            //     scrollDirection: Axis.horizontal,
-            //     padding: EdgeInsets.only(right: 5.0, left: 5.0, top: 5),
-            //     // child: ListView.builder(
-            //     //   itemBuilder: (context, index) {
-            //     //     if (_streetAddresses != null &&
-            //     //         _streetAddresses.length != 0) {
-            //     //       return buildLocationButton(_streetAddresses[index]);
-            //     //     } else {
-            //     //       return Container();
-            //     //     }
-            //     //   },
-            //     //   itemCount: _streetAddresses.length,
-            //     // ),
-            //     child: Container(child:ListView(scrollDirection:Axis.horizontal,children:[Text("hello"),Text("ok"),Text("ho"),Text("o;ssksk")])),
-            // ),
-            Divider(),
+                : Column(
+                    children: [
+                      Container(
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (context, index) {
+                            print("length is " +
+                                _streetAddresses.length.toString());
+                            if (_streetAddresses != null &&
+                                _streetAddresses.length != 0) {
+                              return buildLocationButton(
+                                  _streetAddresses[index]);
+                            } else {
+                              return Container();
+                            }
+                          },
+                          itemCount: _streetAddresses.length,
+                        ),
+                        height: 30,
+                      ),
+                      Divider(),
+                    ],
+                  ),
+
             Padding(
                 padding: EdgeInsets.all(10),
                 child: Text("Category:",
