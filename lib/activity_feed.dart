@@ -198,7 +198,7 @@ openImage(BuildContext context, String imageId) {
           body: ListView(
             children: <Widget>[
               Container(
-                child: ImagePostFromId(id: imageId),
+                child: ImagePostFromId(id: imageId, itsLocationFeed: false),
               ),
             ],
           )),
