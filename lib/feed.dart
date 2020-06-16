@@ -15,7 +15,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'server_controller.dart';
 
-
 class Feed extends StatefulWidget {
   _Feed createState() => _Feed();
 }
@@ -24,13 +23,13 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   List<ImagePost> feedData;
   bool shouldSendRequest = false;
   List<String> feedPostsID = [];
-  double num_of_return_posts =
+  int num_of_return_posts =
       -1; //the initial value because at the beggining we dont now the num of posts
   Coordinates cordinate;
   @override
   void initState() {
     super.initState();
-    this._getFeed();
+    this._getFeed(true);
     initLocation();
   }
 
@@ -47,7 +46,8 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
           alignment: FractionalOffset.center,
           child: Text("No posts to show", style: TextStyle(fontSize: 20)));
     } else if (feedData != null) {
-      return FeedListView(posts: feedData, postsID: feedPostsID, itsLocationFeed: false);
+      return FeedListView(
+          posts: feedData, postsID: feedPostsID, itsLocationFeed: false);
     } else {
       return Container(
           alignment: FractionalOffset.center,
@@ -74,20 +74,16 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
               ),
               onPressed: () async {
                 shouldSendRequest = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) =>
-                                FilterPosts(currentUserModel.preferences)))
-                    as bool;
-                print("back from filter page shouldSendRequest " + shouldSendRequest.toString());
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            FilterPosts(currentUserModel.preferences))) as bool;
+                print("back from filter page shouldSendRequest " +
+                    shouldSendRequest.toString());
                 if (shouldSendRequest) {
-                  setState(() {
-                    feedData =
-                        null; //should set feedData to null in order to stop showing same old feed
-                    num_of_return_posts = -1;
-                  });
+                  clearUI();
                   // await _updateUserPreference();
-                  _getFeed();
+                  _getFeed(false);
                 }
               },
             );
@@ -105,19 +101,22 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
           )
         ],
       ),
-      body: RefreshIndicator(onRefresh: _refresh, child: buildFeed()
-          // child: feedData != null ? ListView.builder(itemBuilder: (context,index){
-          //   return feedData[index];
-          // } ,itemCount: feedData.length): Text(""),/*buildFeed(),*/
-          ),
+      body: RefreshIndicator(onRefresh: _refresh, child: buildFeed()),
     );
+  }
+
+  void clearUI() {
+    setState(() {
+      feedData =
+          null; //should set feedData to null in order to stop showing same old feed
+      num_of_return_posts = -1;
+    });
   }
 
   Future<Null> _refresh() async {
     print("asked for refresh give him more ");
-    await _getFeed();
-
-    setState(() {});
+    clearUI();
+    _getFeed(false);
 
     return;
   }
@@ -131,33 +130,42 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     return postsIds;
   }
 
-  _getFeed() async {
-    print("Staring getFeed");
+  _getFeed(bool fromCache) async {
+    print("Staring getFeed fromCache " + fromCache.toString());
+    var res;
+    bool feed_from_server = false;
+    if (fromCache) {
+      print("fetching from cache");
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String data = prefs.getString("feed");
 
-    String userId = currentUserModel.id.toString();
-    var serverController = ServerController();
-    var res = await serverController.getFeed(userId);
-    
+      if (data != null && data.isNotEmpty) {
+        Map<String, dynamic> data_in_json = jsonDecode(data);
+        Map<String, dynamic> parsedFeed =
+            await ServerController.parseFeedFromJson(data_in_json, false);
+
+        res = [
+          data_in_json['num_of_posts'],
+          parsedFeed['posts'],
+          parsedFeed['postsId']
+        ];
+      } else {
+        print("no data in cache");
+        feed_from_server = true;
+      }
+      print("data is " + res.toString());
+    }
+    if (!fromCache || feed_from_server) {
+      String userId = currentUserModel.id.toString();
+      var serverController = ServerController();
+      res = await serverController.getFeed(userId);
+    }
+
     setState(() {
-      num_of_return_posts = res[resIndexValue.NUM_OF_POSTS.index].toDouble();
+      num_of_return_posts = res[resIndexValue.NUM_OF_POSTS.index];
       feedData = res[resIndexValue.POST_LIST.index];
       feedPostsID = res[resIndexValue.POSTS_ID_LIST.index];
     });
-  }
-
-  Future<List<ImagePost>> _generateFeed(
-      List<Map<String, dynamic>> feedData, int num_of_posts) async {
-    List<ImagePost> listOfPosts = [];
-    var i;
-
-    for (i = 0; i < num_of_posts; i++) {
-      listOfPosts.add(await ImagePost.fromJSON(feedData[i], false));
-    }
-    for (var j = i; j < feedData.length; j++) {
-      listOfPosts.add(await ImagePost.fromID(feedData[j]['post_id'], false));
-    }
-
-    return listOfPosts;
   }
 
   // ensures state is kept when switching pages

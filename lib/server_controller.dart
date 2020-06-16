@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geocoder/geocoder.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'image_post.dart';
 import 'main.dart';
 
@@ -37,13 +38,13 @@ class ServerController{
       if (response.statusCode == HttpStatus.ok) {
         String json = await response.transform(utf8.decoder).join();
         Map<String, dynamic> data_in_json = jsonDecode(json);
-        //print("num_of_posts " + data_in_json['num_of_posts'].toString());
-        List<Map<String, dynamic>> data = data_in_json['posts'].cast<Map<String, dynamic>>();
         if (validate(data_in_json) == true) {
           Map<String, dynamic> parsedFeed = await parseFeedFromJson(data_in_json, false);
           num_of_posts = data_in_json['num_of_posts'];
           listOfPosts = parsedFeed['posts'];
           postsID = parsedFeed['postsId'];
+          SharedPreferences prefs =  await SharedPreferences.getInstance();
+          prefs.setString('feed', json);
         } else {
           print("data from server failed in validation");
         }
@@ -123,7 +124,7 @@ class ServerController{
     }
   }
 
-  Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json, bool itsLocationFeed) async {
+  static Future<Map<String, dynamic>> parseFeedFromJson(Map<String, dynamic> data_in_json, bool itsLocationFeed) async {
     int num_of_posts = data_in_json['num_of_posts'];
     List<Map<String, dynamic>> posts =
         data_in_json['posts'].cast<Map<String, dynamic>>();

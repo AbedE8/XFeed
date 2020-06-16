@@ -599,7 +599,7 @@ class _ImagePost extends State<ImagePost> {
     String urlAndroidStore =
         "https://play.google.com/store/apps/details?id=com.gettaxi.android";
     String urlIosStore =
-        "https://itunes.apple.com/il/app/gett-nyc-black-car/id449655162?mt=8";
+        "https://itunes.apple.com/il/app/gett-get-taxi/id412802326?mt=8";
     if (await canLaunch(url)) {
       print(url);
       await launch(url);
