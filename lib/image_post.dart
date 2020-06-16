@@ -685,14 +685,14 @@ class _ImagePost extends State<ImagePost> {
 
 class ImagePostFromId extends StatelessWidget {
   final String id;
-  final bool whithLocationFeedMenu;
+  final bool itsLocationFeed;
 
-  const ImagePostFromId({this.id, this.whithLocationFeedMenu});
+  const ImagePostFromId({this.id, this.itsLocationFeed});
 
   getImagePost() async {
     var document =
         await Firestore.instance.collection('posts').document(id).get();
-    return ImagePost.fromDocument(document, this.whithLocationFeedMenu);
+    return ImagePost.fromDocument(document, this.itsLocationFeed);
   }
 
   @override
