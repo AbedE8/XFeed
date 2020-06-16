@@ -110,7 +110,7 @@ class ImagePost extends StatefulWidget {
         .document(postID)
         .updateData({'views': FieldValue.increment(1)});
     }
-    return await fromDocument(postData, !itsLocationFeedPost);
+    return await fromDocument(postData, itsLocationFeedPost);
   }
 
   int getLikeCount(var likes) {
@@ -599,7 +599,7 @@ class _ImagePost extends State<ImagePost> {
     String urlAndroidStore =
         "https://play.google.com/store/apps/details?id=com.gettaxi.android";
     String urlIosStore =
-        "https://itunes.apple.com/us/app/gett-nyc-black-car/id449655162?mt=8";
+        "https://itunes.apple.com/il/app/gett-nyc-black-car/id449655162?mt=8";
     if (await canLaunch(url)) {
       print(url);
       await launch(url);

@@ -1,3 +1,5 @@
+// import 'dart:html';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
@@ -28,6 +30,7 @@ class _ProfilePage extends State<ProfilePage>
   int followingCount = 0;
   User userProfile;
   List<DocumentSnapshot> _userPosts = new List();
+
   _ProfilePage(this.profileId);
   openChat() {
     Navigator.push(
@@ -84,6 +87,13 @@ class _ProfilePage extends State<ProfilePage>
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getUserInfo();
+  }
+
+  @override
   Widget build(BuildContext context) {
     super.build(context); // reloads state when opened again
 
@@ -111,21 +121,12 @@ class _ProfilePage extends State<ProfilePage>
 
     Future<List<ImagePost>> getPosts() async {
       print("fetching user posts");
-      List<ImagePost> posts = [];
-      // var snap = await Firestore.instance
-      //     .collection('posts')
-      //     .where("publisher", isEqualTo: profileId)
-      //     .orderBy("timeStamp", descending: true)
-      //     .getDocuments();
-      for (var doc in _userPosts) {
-        // print("post "+doc.data.toString());
-        posts.add(await ImagePost.fromDocument(doc, true));
-      }
-      // print()
-      //  setState(() {
-      //  postCount = snap.documents.length;
-      // print("counts num " + postCount.toString());
-      //});
+
+       List<ImagePost> posts = [];
+      
+        for (var doc in _userPosts) {
+          posts.add(await ImagePost.fromDocument(doc,true));
+        }
 
       return posts.toList();
     }
@@ -215,7 +216,6 @@ class _ProfilePage extends State<ProfilePage>
                 padding: const EdgeInsets.only(top: 10.0),
                 child: CircularProgressIndicator());
           if (view == "grid") {
-            // build the grid
             return GridView.count(
                 crossAxisCount: 3,
                 childAspectRatio: 1.0,
@@ -224,40 +224,27 @@ class _ProfilePage extends State<ProfilePage>
                 crossAxisSpacing: 1.5,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                children: snapshot.data.map((ImagePost imagePost) {
-                  return GridTile(child: ImageTile(imagePost));
+                children: snapshot.data.map((ImagePost post) {
+                  return GridTile(child: ImageTile(post));
                 }).toList());
           } else if (view == "feed") {
             return Column(
-                children: snapshot.data.map((ImagePost imagePost) {
-              return imagePost;
+                children: snapshot.data.map((ImagePost post) {
+              return post;
             }).toList());
           }
         },
       ));
-    }
-
-    getUserInfo() async {
-      var snapshotUser = await Firestore.instance
-          .collection('users')
-          .document(profileId)
-          .get();
-
-      var snapshotPosts = await Firestore.instance
-          .collection('posts')
-          .where("publisher", isEqualTo: profileId)
-          .orderBy("timeStamp", descending: true)
-          .getDocuments();
-
-      postCount = snapshotPosts.documents.length;
-      _userPosts = snapshotPosts.documents;
-      print("updating num of posts to " + postCount.toString());
-      return snapshotUser;
+      // },
+      // ));
     }
 
     return Scaffold(
-        body: FutureBuilder(
-            future: getUserInfo(),
+        body: FutureBuilder<DocumentSnapshot>(
+            future: Firestore.instance
+                .collection('users')
+                .document(profileId)
+                .get(),
             builder: (context, snapshot) {
               if (!snapshot.hasData)
                 return Container(
@@ -352,6 +339,24 @@ class _ProfilePage extends State<ProfilePage>
     followings.forEach(countValues);
 
     return count;
+  }
+
+  void getUserInfo() async {
+    // var snapshotUser =
+
+    var snapshotPosts = await Firestore.instance
+        .collection('posts')
+        .where("publisher", isEqualTo: profileId)
+        .orderBy("timeStamp", descending: true)
+        .getDocuments();
+
+    postCount = snapshotPosts.documents.length;
+    _userPosts = snapshotPosts.documents;
+    // print("updating num of posts to " + postCount.toString());
+    // return snapshotUser;
+    setState(() {
+      
+    });
   }
 
   // ensures state is kept when switching pages

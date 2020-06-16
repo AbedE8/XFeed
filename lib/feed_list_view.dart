@@ -36,7 +36,7 @@ class _MyFeedListViewState extends State<FeedListView> {
   }
 
   updateList(List<ImagePost> value) {
-    print("back from async update posts lists");
+    // print("back from async update posts lists");
     setState(() {
       if (value != null) {
         posts.addAll(value);
@@ -46,13 +46,13 @@ class _MyFeedListViewState extends State<FeedListView> {
 
   Future<List<ImagePost>> fetchPostsFromId(int num_of_posts) async {
     int num_posts_to_fetch = min(num_of_posts, postsID.length);
-    print("About to fetch " + num_posts_to_fetch.toString() + " from postIds");
+    // print("About to fetch " + num_posts_to_fetch.toString() + " from postIds");
     if (num_posts_to_fetch == 0) {
-      print("no more post ids ");
+      // print("no more post ids ");
       return null;
     }
     List<String> ids = postsID.getRange(0, num_posts_to_fetch).toList();
-    print("About to fetch list ids length"+ids.length.toString());
+
     postsID.removeRange(0, num_posts_to_fetch);
     List<ImagePost> to_return = [];
     for (var id in ids) {
@@ -72,6 +72,7 @@ class _MyFeedListViewState extends State<FeedListView> {
     return new Scaffold(
       body: new Scrollbar(
         child: new ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics (),
           controller: controller,
           itemBuilder: (context, index) {
             return posts[index];
@@ -88,11 +89,7 @@ class _MyFeedListViewState extends State<FeedListView> {
       // print("arrived to the end");
       Future<List<ImagePost>> newPosts = fetchPostsFromId(postsToFetch);
       newPosts.then((value) => updateList(value));
-    //   setState(() {
-    //     if (newPosts != null) {
-    //       posts.addAll(newPosts);
-    //     }
-    //   });
+    
     }
   }
 }
