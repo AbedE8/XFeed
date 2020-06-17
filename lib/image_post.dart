@@ -13,6 +13,7 @@ import 'location_feed.dart';
 import 'main.dart';
 import 'dart:async';
 import 'models/user.dart';
+import 'locationService.dart';
 import 'profile_page.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'comment_screen.dart';
@@ -177,7 +178,6 @@ class _ImagePost extends State<ImagePost> {
   final String ownerId;
   List<String> categories = new List();
   bool showHeart = false;
-  GeoPoint dropOffLocation;
 
   TextStyle boldStyle = TextStyle(
     color: Colors.black,
@@ -513,32 +513,6 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-  void checkIfArrived(location) async {
-    Geodesy geodesy = Geodesy();
-    print("dropOff: lng:" + dropOffLocation.longitude.toString() + " lat:" + dropOffLocation.latitude.toString());
-    print("location: lng:" + location.longitude.toString() + " lat:" + location.latitude.toString());
-    if (geodesy.distanceBetweenTwoGeoPoints(new LatLng(dropOffLocation.latitude, dropOffLocation.longitude), new LatLng(location.latitude, location.longitude)) < 60){
-      BackgroundLocation.stopLocationService();
-      var serverController = ServerController();
-      await serverController.userArrivedLocation(currentUserModel.id);
-    }
-  }
-
-  void startLocationService(){
-      BackgroundLocation.getPermissions(
-      onGranted: () {
-          print("start service");
-          BackgroundLocation.startLocationService();
-        },
-      onDenied: () {
-        // Show a message asking the user to reconsider or do something else
-      });
-      print("location");
-      BackgroundLocation.getLocationUpdates((location) {
-        checkIfArrived(location);
-      });
-  }
-
   takeMe() {
     print("takeMe has been pressed");
     showDialog(
@@ -605,9 +579,9 @@ class _ImagePost extends State<ImagePost> {
         '%2C' +
         locationGeoPoint.longitude.toString() +
         '&navigate=yes&zoom=17';
-    dropOffLocation = locationGeoPoint;
     if (await canLaunch(url)) {
-      startLocationService();
+      LocationService locationService = new LocationService(locationGeoPoint.longitude, locationGeoPoint.latitude); 
+      locationService.startLocationService();
       await launch(url);
     } else {
       throw 'Could not launch $url';
@@ -622,7 +596,6 @@ class _ImagePost extends State<ImagePost> {
         .where("d.name", isEqualTo: dropoff_location)
         .getDocuments();
     GeoPoint dropOff = snapGeoLocationDB.documents[0].data['d']['coordinates'];
-    dropOffLocation = dropOff;
     String url = 'gett://order?pickup_latitude=' +
         pickupLocation.latitude.toString() +
         '&pickup_longitude=' +
@@ -636,7 +609,8 @@ class _ImagePost extends State<ImagePost> {
     String urlIosStore =
         "https://itunes.apple.com/il/app/gett-get-taxi/id412802326?mt=8";
     if (await canLaunch(url)) {
-      startLocationService();
+      LocationService locationService = new LocationService(dropOff.longitude, dropOff.latitude); 
+      locationService.startLocationService();
       await launch(url);
     } else {
       if (Platform.isAndroid) {

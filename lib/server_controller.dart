@@ -126,6 +126,7 @@ class ServerController{
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: req_body);
+    print("inform server that user arrived.");
   }
 
   bool validate(Map<String, dynamic> data) {
