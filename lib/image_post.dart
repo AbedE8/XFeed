@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:background_location/background_location.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Xfeedm/categories.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +17,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'comment_screen.dart';
 import 'package:flare_flutter/flare_actor.dart';
 import 'package:timeago/timeago.dart' as timeago;
+
+import 'server_controller.dart';
 
 class ImagePost extends StatefulWidget {
   ImagePost(
@@ -173,6 +176,7 @@ class _ImagePost extends State<ImagePost> {
   final String ownerId;
   List<String> categories = new List();
   bool showHeart = false;
+  GeoPoint dropOffLocation;
 
   TextStyle boldStyle = TextStyle(
     color: Colors.black,
@@ -508,6 +512,33 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
+  void checkIfArrived(location) async {
+    print("kalo");
+    print("dropOff: lng:" + dropOffLocation.longitude.toString() + " lat:" + dropOffLocation.latitude.toString());
+    print("location: lng:" + location.longitude.toString() + " lat:" + location.latitude.toString());
+    if ((location.longitude - dropOffLocation.longitude).abs() < 0.003 &&
+        (location.longitude - dropOffLocation.latitude).abs() < 0.003){
+      BackgroundLocation.stopLocationService();
+      var serverController = ServerController();
+      await serverController.userArrivedLocation(currentUserModel.id);
+    }
+  }
+
+  void startLocationService(){
+      BackgroundLocation.getPermissions(
+      onGranted: () {
+          print("start service");
+          BackgroundLocation.startLocationService();
+        },
+      onDenied: () {
+        // Show a message asking the user to reconsider or do something else
+      });
+      print("location");
+      BackgroundLocation.getLocationUpdates((location) {
+        checkIfArrived(location);
+      });
+  }
+
   takeMe() {
     print("takeMe has been pressed");
     showDialog(
@@ -517,6 +548,7 @@ class _ImagePost extends State<ImagePost> {
   }
 
   Widget _buildAboutDialog(BuildContext context) {
+    BackgroundLocation.stopLocationService();
     return new AlertDialog(
       // title: const Text('Going with:'),
       actions: <Widget>[
@@ -573,7 +605,9 @@ class _ImagePost extends State<ImagePost> {
         '%2C' +
         locationGeoPoint.longitude.toString() +
         '&navigate=yes&zoom=17';
+    dropOffLocation = locationGeoPoint;
     if (await canLaunch(url)) {
+      startLocationService();
       await launch(url);
     } else {
       throw 'Could not launch $url';
@@ -588,6 +622,7 @@ class _ImagePost extends State<ImagePost> {
         .where("d.name", isEqualTo: dropoff_location)
         .getDocuments();
     GeoPoint dropOff = snapGeoLocationDB.documents[0].data['d']['coordinates'];
+    dropOffLocation = dropOff;
     String url = 'gett://order?pickup_latitude=' +
         pickupLocation.latitude.toString() +
         '&pickup_longitude=' +
@@ -601,10 +636,11 @@ class _ImagePost extends State<ImagePost> {
     String urlIosStore =
         "https://itunes.apple.com/il/app/gett-get-taxi/id412802326?mt=8";
     if (await canLaunch(url)) {
-      print(url);
+      startLocationService();
       await launch(url);
     } else {
       if (Platform.isAndroid) {
+        /*TODO: look for a way to follow location if the user download the app and start with the drive.*/
         print(
             'Gett is not currently installed on your phone, opening Play Store.');
         await launch(urlAndroidStore);

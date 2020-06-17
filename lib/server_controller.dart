@@ -116,6 +116,18 @@ class ServerController{
         body: req_body);
   }
   
+ userArrivedLocation(String userId) async{
+    var req_body = jsonEncode(<String, dynamic>{
+      'userId': userId
+    });
+    await http.post(
+        serverUrl + 'userArriveToLocation',
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: req_body);
+  }
+
   bool validate(Map<String, dynamic> data) {
     if (!data.containsKey('num_of_posts')) {
       return false;
