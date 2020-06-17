@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:background_location/background_location.dart';
+import 'package:geodesy/geodesy.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Xfeedm/categories.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -513,11 +514,10 @@ class _ImagePost extends State<ImagePost> {
   }
 
   void checkIfArrived(location) async {
-    print("kalo");
+    Geodesy geodesy = Geodesy();
     print("dropOff: lng:" + dropOffLocation.longitude.toString() + " lat:" + dropOffLocation.latitude.toString());
     print("location: lng:" + location.longitude.toString() + " lat:" + location.latitude.toString());
-    if ((location.longitude - dropOffLocation.longitude).abs() < 0.003 &&
-        (location.longitude - dropOffLocation.latitude).abs() < 0.003){
+    if (geodesy.distanceBetweenTwoGeoPoints(new LatLng(dropOffLocation.latitude, dropOffLocation.longitude), new LatLng(location.latitude, location.longitude)) < 60){
       BackgroundLocation.stopLocationService();
       var serverController = ServerController();
       await serverController.userArrivedLocation(currentUserModel.id);

@@ -39,6 +39,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^0.1.3
   timeago: ^2.0.26
+  geodesy: ^0.3.2
 
 dev_dependencies:
   google_maps_flutter:
