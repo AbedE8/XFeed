@@ -36,6 +36,7 @@ class LocationService {
     onDenied: () {
       // Show a message asking the user to reconsider or do something else
     });
+    BackgroundLocation.startLocationService();
     BackgroundLocation.getLocationUpdates((location) {
       checkIfArrived(location);
     });

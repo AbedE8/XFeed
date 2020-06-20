@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:background_location/background_location.dart';
-import 'package:geodesy/geodesy.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:Xfeedm/categories.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,7 +18,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'comment_screen.dart';
 import 'package:flare_flutter/flare_actor.dart';
 import 'package:timeago/timeago.dart' as timeago;
-
+import 'package:geodesy/geodesy.dart';
 import 'server_controller.dart';
 
 class ImagePost extends StatefulWidget {
@@ -513,6 +512,7 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
+
   takeMe() {
     print("takeMe has been pressed");
     showDialog(
@@ -522,7 +522,7 @@ class _ImagePost extends State<ImagePost> {
   }
 
   Widget _buildAboutDialog(BuildContext context) {
-    BackgroundLocation.stopLocationService();
+    // BackgroundLocation.stopLocationService();
     return new AlertDialog(
       // title: const Text('Going with:'),
       actions: <Widget>[

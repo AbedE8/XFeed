@@ -51,6 +51,7 @@ class _Uploader extends State<Uploader> {
       coordinate; //= new Coordinates(32.0807735, 34.7740245); //TZINA location for testx
   String feature_name = "";
   List<String> suggestions;
+  Map<String,String> _id_from_name = {}; // this list is used to convert between place name and place id
   GlobalKey<AutoCompleteTextFieldState<String>> autoCompleteKey =
       new GlobalKey();
   SimpleAutoCompleteTextField textField;
@@ -65,6 +66,7 @@ class _Uploader extends State<Uploader> {
   @override
   initState() {
     suggestions = new List();
+    
     _streetAddresses = new List();
     initPlatformState(); //method to call location
     super.initState();
@@ -82,6 +84,9 @@ class _Uploader extends State<Uploader> {
         FilterPosts.minAge.toString(), FilterPosts.maxAge.toString());
 
     textField = SimpleAutoCompleteTextField(
+      minLength: 1,
+      textInputAction: TextInputAction.go,
+      keyboardType: TextInputType.text,
       key: autoCompleteKey,
       decoration: new InputDecoration(
           hintText: "Where was this photo taken?",
@@ -118,16 +123,19 @@ class _Uploader extends State<Uploader> {
       buildSuggestions(data, 'description');
     } else {
       suggestions.clear();
+      _id_from_name.clear();
       textField.updateSuggestions(suggestions);
     }
   }
 
   buildSuggestions(List<Map<String, dynamic>> data, String parser) {
     suggestions.clear();
+    _id_from_name.clear();
     for (var item in data) {
       if (item.containsKey(parser) && !suggestions.contains(item[parser])) {
         print("adding  " + parser + item[parser]);
         suggestions.add(item[parser]);
+        _id_from_name[item[parser]]=item['place_id'];
       }
     }
     suggestions.addAll(_streetAddresses);
@@ -146,7 +154,7 @@ class _Uploader extends State<Uploader> {
             "&strictbounds" +
             "&key=" +
             kGoogleApiKey;
-    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'predictions');
+    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'predictions',true);
     print("recieved data length is " + data.length.toString());
     return data;
   }
@@ -194,7 +202,7 @@ class _Uploader extends State<Uploader> {
             "&result_type=street_address" +
             "&key=" +
             kGoogleApiKey;
-    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'results');
+    List<Map<String, dynamic>> data = await getDataFromUrl(url, 'results',true);
     print("recieved data length is " + data.length.toString());
     for (var item in data) {
       // print("formatted addres "+item['formatted_address']);
@@ -252,6 +260,12 @@ class _Uploader extends State<Uploader> {
               title: Container(
                 width: 250.0,
                 child: textField,
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.close),
+                onPressed: () {
+                  locationController.clear();
+                },
               ),
             ),
             Divider(),
@@ -430,6 +444,7 @@ class _Uploader extends State<Uploader> {
   buildLocationButton(String locationName) {
     if (locationName != null ?? locationName.isNotEmpty) {
       return InkWell(
+        onTapCancel: () => {print("cancel has been presed")},
         onTap: () {
           locationController.text = locationName;
           setState(() {
@@ -466,17 +481,31 @@ class _Uploader extends State<Uploader> {
     });
   }
 
-  void postImage() {
+  void postImage() async {
     setState(() {
       uploading = true;
     });
+    Coordinates to_pass = coordinate;
+    if(_id_from_name.containsKey(locationController.text)){
+      print("retrevieng location lat/lng place_id "+_id_from_name[locationController.text]);
+      var http_url = "https://maps.googleapis.com/maps/api/place/details/json?"+
+      "place_id="+_id_from_name[locationController.text]+
+      "&fields=geometry"+
+      "&key="+kGoogleApiKey;
+      Map<String, dynamic> data = await getDataFromUrl(http_url, 'result',false);
+      Map<String,dynamic> geometry = data['geometry'];
+      print("recieved geometry "+geometry.toString());
+      Coordinates d = new Coordinates(geometry['location']['lat'],geometry['location']['lng']);
+      to_pass = d;
+    }
+    
     uploadImage(file).then((String data) {
       serverController.uploadPost(
           mediaUrl: data,
           description: descriptionController.text,
           location: locationController.text,
           activity: _chosedCat,
-          point: coordinate,
+          point: to_pass,
           genders: _chosedGender,
           ageRange: _rangeValue);
     }).then((_) {
@@ -512,13 +541,21 @@ class _Uploader extends State<Uploader> {
     );
   }
 
-  getDataFromUrl(String url, String data_array) async {
+  getDataFromUrl(String url, String data_array, bool isList) async {
     print("About to send request URL: " + url);
     final response = await http.get(url);
     Map<String, dynamic> json_data = json.decode(response.body);
-    List<Map<String, dynamic>> list_data =
+    var result;
+    if(isList){
+        List<Map<String, dynamic>> list_data =
         json_data[data_array].cast<Map<String, dynamic>>();
-    return list_data;
+        result = list_data;
+    }
+    else{
+      result = json_data[data_array];
+    }
+
+    return result;
   }
 
   getCurrentAddresLength() {
@@ -537,7 +574,7 @@ class _Uploader extends State<Uploader> {
           'location=${coordinate.latitude},${coordinate.longitude}&rankby=distance&key=' +
           kGoogleApiKey;
       List<Map<String, dynamic>> list_data =
-          await getDataFromUrl(url, 'results');
+          await getDataFromUrl(url, 'results',true);
       googleNearbyPlaces[loc_to_str] = list_data;
     } else {
       print("No need to send request to google");
@@ -599,6 +636,11 @@ class _PostForm extends State<PostForm> {
             Container(
               width: 250.0,
               child: TextField(
+                maxLines: null,
+                textInputAction: TextInputAction
+                    .go, // In case you want the "ENTER" key to close the Keyboard
+                keyboardType: TextInputType.text,
+                minLines: 1,
                 controller: descriptionController,
                 decoration: InputDecoration(
                     hintText: "Write a caption...", border: InputBorder.none),

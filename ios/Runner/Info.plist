@@ -68,6 +68,7 @@
 	<string>Used to allow the user to select a photo to upload as a post</string>
 	<key>UIBackgroundModes</key>
 	<array>
+		<string>location</string>
 		<string>processing</string>
 		<string>remote-notification</string>
 	</array>

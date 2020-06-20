@@ -94,6 +94,7 @@ class ServerController{
 
   uploadPost({String mediaUrl, String location, String description, Set<String> activity,
             Coordinates point, Set<String> genders, RangeValues ageRange}) async {
+    
     var req_body = jsonEncode(<String, dynamic>{
       'lng': "${point.longitude}",
       'lat': "${point.latitude}",
