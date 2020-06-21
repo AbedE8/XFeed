@@ -319,7 +319,6 @@ class _ImagePost extends State<ImagePost> {
   @override
   Widget build(BuildContext context) {
     liked = (likes[currentUserModel.id.toString()] == true);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[

@@ -121,12 +121,10 @@ class _ProfilePage extends State<ProfilePage>
 
     Future<List<ImagePost>> getPosts() async {
       print("fetching user posts");
-
-       List<ImagePost> posts = [];
-      
-        for (var doc in _userPosts) {
-          posts.add(await ImagePost.fromDocument(doc,true));
-        }
+      List<ImagePost> posts = [];
+      for (var doc in _userPosts) {
+        posts.add(await ImagePost.fromDocument(doc,false));
+      }
 
       return posts.toList();
     }
@@ -370,7 +368,7 @@ class ImageTile extends StatelessWidget {
   ImageTile(this.imagePost);
 
   getImagePost(DocumentSnapshot imageDocument) async {
-    return await ImagePost.fromDocument(imageDocument, true);
+    return await ImagePost.fromDocument(imageDocument, false);
   }
 
   clickedImage(BuildContext context) {

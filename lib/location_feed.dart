@@ -53,7 +53,6 @@ class _LocationFeedPage extends State<LocationFeedPage> {
                     locationPosts = snapLocationPosts.data;
                     listOfPosts = locationPosts['posts'];
                     postsID = locationPosts['postsId'];
-
                     return FeedListView(posts: listOfPosts, postsID: postsID, itsLocationFeed: true);
                   }
 

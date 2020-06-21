@@ -46,9 +46,9 @@ class _MyFeedListViewState extends State<FeedListView> {
 
   Future<List<ImagePost>> fetchPostsFromId(int num_of_posts) async {
     int num_posts_to_fetch = min(num_of_posts, postsID.length);
-    // print("About to fetch " + num_posts_to_fetch.toString() + " from postIds");
+    //print("About to fetch " + num_posts_to_fetch.toString() + " from postIds");
     if (num_posts_to_fetch == 0) {
-      // print("no more post ids ");
+      //print("no more post ids ");
       return null;
     }
     List<String> ids = postsID.getRange(0, num_posts_to_fetch).toList();

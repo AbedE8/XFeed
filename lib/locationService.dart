@@ -20,7 +20,7 @@ class LocationService {
     print("dropOff: lng:" + this.dropOffLng.toString() + " lat:" + this.dropOffLat.toString());
     print("location: lng:" + userLocation.longitude.toString() + " lat:" + userLocation.latitude.toString());
     print(geodesy.distanceBetweenTwoGeoPoints(new LatLng(this.dropOffLat, this.dropOffLng), new LatLng(userLocation.latitude, userLocation.longitude)));
-    if (geodesy.distanceBetweenTwoGeoPoints(new LatLng(this.dropOffLat, this.dropOffLng), new LatLng(userLocation.latitude, userLocation.longitude)) < 90){
+    if (geodesy.distanceBetweenTwoGeoPoints(new LatLng(this.dropOffLat, this.dropOffLng), new LatLng(userLocation.latitude, userLocation.longitude)) < 50){
       BackgroundLocation.stopLocationService();
       var serverController = ServerController();
       await serverController.userArrivedLocation(currentUserModel.id);

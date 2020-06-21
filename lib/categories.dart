@@ -12,11 +12,11 @@ class FeedCategory {
     FeedCategory("resturant", Icon(Icons.restaurant), Colors.green[brightness]),
     FeedCategory("bar", Icon(Icons.local_bar), Colors.pink[brightness]),
     FeedCategory("gym", Icon(Icons.fitness_center), Colors.cyan[brightness]),
-    FeedCategory(
-        "night_club", Icon(Icons.audiotrack), Colors.purple[brightness]),
+    FeedCategory("night_club", Icon(Icons.audiotrack), Colors.purple[brightness]),
     FeedCategory("casino", Icon(Icons.casino), Colors.yellow[brightness]),
     FeedCategory("cafe", Icon(Icons.local_cafe), Colors.orange[brightness]),
     FeedCategory("food", Icon(Icons.fastfood), Colors.red[brightness]),
+    FeedCategory("info", Icon(Icons.info), Colors.blue[50]),
   ];
   static getAllCategoriesNames() {
     List<String> result = new List();
