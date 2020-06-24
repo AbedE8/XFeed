@@ -24,7 +24,7 @@ import 'server_controller.dart';
 class ImagePost extends StatefulWidget {
   ImagePost(
       {this.mediaUrl,
-      this.username,
+      this.publisher,
       this.location,
       this.description,
       this.likes,
@@ -61,14 +61,16 @@ class ImagePost extends StatefulWidget {
 
   static Future<ImagePost> fromDocument(DocumentSnapshot document, bool itsLocationFeed) async {
     var userRef = document.data['publisher'];
-    var userData = await users_reference.document(userRef).get();
+    // var userData = await users_reference.document(userRef).get();
+    User publisher = await User.fromID(userRef);
     DateTime postTime = document.data['timeStamp'].toDate();
     final now = new DateTime.now();
     Duration differ = now.difference(postTime.toUtc());
     String timePassed = timeago.format(now.subtract(differ));
-    int numComments = await getCommentsCount(document.documentID);
+    // int numComments = await getCommentsCount(document.documentID);
+    int numComments = document.data['comments'];
     return ImagePost(
-        username: userData.data['username'],
+        publisher: publisher,
         location: document.data['feature_name'],
         mediaUrl: document.data['img_url'],
         likes: document.data['likes'],
@@ -80,20 +82,40 @@ class ImagePost extends StatefulWidget {
         numComments: numComments,
         itsLocationFeed: itsLocationFeed);
   }
-
+  static ImagePost fromDocumentSync(DocumentSnapshot document, bool itsLocationFeed, User user)  {
+    // var userRef = document.data['publisher'];
+    // var userData = await users_reference.document(userRef).get();
+    DateTime postTime = document.data['timeStamp'].toDate();
+    final now = new DateTime.now();
+    Duration differ = now.difference(postTime.toUtc());
+    String timePassed = timeago.format(now.subtract(differ));
+    int numComments = document.data['comments'];
+    return ImagePost(
+        publisher: user,
+        location: document.data['feature_name'],
+        mediaUrl: document.data['img_url'],
+        likes: document.data['likes'],
+        description: document.data['description'],
+        postId: document.documentID,
+        ownerId: document.data['publisher'],
+        activities: document.data['category'],
+        timeStr: timePassed,
+        numComments: numComments,
+        itsLocationFeed: itsLocationFeed);
+  }
   static Future<ImagePost> fromJSON(Map<String, dynamic> data, bool itsLocationFeed) async {
     var userRef = data['publisher'];
-    DocumentSnapshot userData = await users_reference.document(userRef).get();
-
+    // DocumentSnapshot userData = await users_reference.document(userRef).get();
+    User publisher = await User.fromID(userRef);
     int seconds = data['timeStamp']['_seconds'];
     int nano = data['timeStamp']['_nanoseconds'];
     final now = new DateTime.now();
     DateTime postTime = fromTimestamp(seconds, nano);
     Duration differ = now.difference(postTime);
     String timePassed = timeago.format(now.subtract(differ));
-    int numComments = await getCommentsCount(data['id']);
+    int numComments = data['comments'];
     return ImagePost(
-        username: userData.data['username'],
+        publisher: publisher,
         location: data['feature_name'],
         mediaUrl: data['img_url'],
         likes: data['likes'],
@@ -109,12 +131,15 @@ class ImagePost extends StatefulWidget {
   //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
   static Future<ImagePost> fromID(String postID, bool itsLocationFeedPost) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
+    var userRef = postData.data['publisher'];
+    // var userData = await users_reference.document(userRef).get();
+    User publisher = await User.fromID(userRef);
     if (!itsLocationFeedPost) {
       posts_reference
         .document(postID)
         .updateData({'views': FieldValue.increment(1)});
     }
-    return await fromDocument(postData, itsLocationFeedPost);
+    return fromDocumentSync(postData, itsLocationFeedPost,publisher);
   }
 
   int getLikeCount(var likes) {
@@ -134,7 +159,7 @@ class ImagePost extends StatefulWidget {
   }
 
   final String mediaUrl;
-  final String username;
+  final User publisher;
   final String location;
   final String description;
   final String timeStr;
@@ -147,7 +172,7 @@ class ImagePost extends StatefulWidget {
   // FloatingActionButton loc = new FloatingActionButton(onPressed: null)
   _ImagePost createState() => _ImagePost(
       mediaUrl: this.mediaUrl,
-      username: this.username,
+      publisher: this.publisher,
       location: this.location,
       description: this.description,
       likes: this.likes,
@@ -162,7 +187,7 @@ class ImagePost extends StatefulWidget {
 
 class _ImagePost extends State<ImagePost> {
   final String mediaUrl;
-  final String username;
+  final User publisher;
   final String location;
   final String description;
   final List<dynamic>
@@ -177,7 +202,6 @@ class _ImagePost extends State<ImagePost> {
   final String ownerId;
   List<String> categories = new List();
   bool showHeart = false;
-
   TextStyle boldStyle = TextStyle(
     color: Colors.black,
     fontWeight: FontWeight.bold,
@@ -187,7 +211,7 @@ class _ImagePost extends State<ImagePost> {
 
   _ImagePost(
       {this.mediaUrl,
-      this.username,
+      this.publisher,
       this.location,
       this.description,
       this.likes,
@@ -200,9 +224,18 @@ class _ImagePost extends State<ImagePost> {
       this.itsLocationFeed});
   @override
   void initState() {
+    print("in init state postId "+postId);
     categories = parseActivities(this.activities.toString());
+    // getPuplisher();
+    
   }
-
+  // getPuplisher() async{
+  //   puplisher = await User.fromID(ownerId);
+  //   setState(() {
+        
+  //   });
+    
+  // }
   GestureDetector buildLikeIcon() {
     Color color;
     IconData icon;
@@ -271,18 +304,14 @@ class _ImagePost extends State<ImagePost> {
       return Text("owner error");
     }
 
-    return FutureBuilder(
-        future: Firestore.instance.collection('users').document(ownerId).get(),
-        builder: (context, snapshot) {
-          if (snapshot.data != null) {
             return ListTile(
                 leading: CircleAvatar(
                   backgroundImage: CachedNetworkImageProvider(
-                      snapshot.data.data['profile_pic_url']),
+                      publisher.photoUrl),
                   backgroundColor: Colors.grey,
                 ),
                 title: GestureDetector(
-                  child: Text(snapshot.data.data['username'], style: boldStyle),
+                  child: Text(publisher.username, style: boldStyle),
                   onTap: () {
                     openProfile(context, ownerId);
                   },
@@ -296,11 +325,6 @@ class _ImagePost extends State<ImagePost> {
                     onPressed: () => openLocationFeed(context, this.location),
                   ) : null
                 );
-          }
-
-          // snapshot data is null here
-          return Container();
-        });
   }
 
   Container loadingPlaceHolder = Container(
@@ -470,13 +494,13 @@ class _ImagePost extends State<ImagePost> {
             Container(
                 margin: const EdgeInsets.only(left: 20.0),
                 child: Text(
-                  "$username ",
+                  "${publisher.username} ",
                   style: boldStyle,
                 )),
             Expanded(child: Text(description)),
           ],
         ),
-        this.numComments == 0
+        this.numComments == 0 || this.numComments == null
             ? Container()
             : Row(crossAxisAlignment: CrossAxisAlignment.start,
               

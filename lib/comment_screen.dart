@@ -127,6 +127,10 @@ class _CommentScreenState extends State<CommentScreen> {
       "postId": postId,
       "mediaUrl": postMediaUrl,
     });
+    Firestore.instance
+        .collection('posts')
+        .document(postId)
+        .updateData({'comments': FieldValue.increment(1)});
   }
 }
 

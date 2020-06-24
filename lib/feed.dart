@@ -158,6 +158,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     if (!fromCache || feed_from_server) {
       String userId = currentUserModel.id.toString();
       var serverController = ServerController();
+      print("userid is "+userId.toString());
       res = await serverController.getFeed(userId);
     }
 

@@ -18,7 +18,7 @@ class _MyFeedListViewState extends State<FeedListView> {
   final List<String> postsID;
   ScrollController controller;
   static const int postsToFetch = 1;
-  static const int initPostsToFetch = 3;
+  static const int initPostsToFetch = 1;
   final bool itsLocationFeed;
   
   // List<String> items = new List.generate(100, (index) => 'Hello $index');
@@ -57,6 +57,7 @@ class _MyFeedListViewState extends State<FeedListView> {
     List<ImagePost> to_return = [];
     for (var id in ids) {
       to_return.add(await ImagePost.fromID(id, this.itsLocationFeed));
+      
     }
     return to_return;
   }
@@ -85,11 +86,18 @@ class _MyFeedListViewState extends State<FeedListView> {
 
   void _scrollListener() async {
     // print(controller.position.extentAfter);
-    if (controller.position.extentAfter < 500) {
-      // print("arrived to the end");
-      Future<List<ImagePost>> newPosts = fetchPostsFromId(postsToFetch);
-      newPosts.then((value) => updateList(value));
-    
+    if (controller.position.extentAfter < 100) {
+      print("arrived to the end");
+      // Future<List<ImagePost>> newPosts = fetchPostsFromId(postsToFetch);
+      // newPosts.then((value) => updateList(value));
+      if(postsID.length == 0){
+        controller.removeListener(_scrollListener);
+        return;
+      }
+      List<ImagePost> newPosts = await fetchPostsFromId(postsToFetch);
+      updateList(newPosts);
+      print("has "+postsID.length.toString());
+      
     }
   }
 }

@@ -119,12 +119,20 @@ class _ProfilePage extends State<ProfilePage>
       );
     }
 
+    List<ImagePost> posts = [];
     Future<List<ImagePost>> getPosts() async {
       print("fetching user posts");
-      List<ImagePost> posts = [];
-      for (var doc in _userPosts) {
-        posts.add(await ImagePost.fromDocument(doc,false));
-      }
+
+      //for (var doc in _userPosts) {
+      //posts.add( ImagePost.fromDocument(doc,false));
+      _userPosts.forEach((element) {
+        ImagePost.fromDocument(element, false).then((value) => {
+              // setState(() {
+              // posts.add(value);
+              // })
+            });
+      });
+      //}
 
       return posts.toList();
     }
@@ -172,34 +180,6 @@ class _ProfilePage extends State<ProfilePage>
         textColor: Colors.black,
         borderColor: Colors.grey,
         function: editProfile,
-      );
-    }
-
-    Row buildImageViewButtonBar() {
-      Color isActiveButtonColor(String viewName) {
-        if (view == viewName) {
-          return Colors.blueAccent;
-        } else {
-          return Colors.black26;
-        }
-      }
-
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          IconButton(
-            icon: Icon(Icons.grid_on, color: isActiveButtonColor("grid")),
-            onPressed: () {
-              changeView("grid");
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.list, color: isActiveButtonColor("feed")),
-            onPressed: () {
-              changeView("feed");
-            },
-          ),
-        ],
       );
     }
 
@@ -311,18 +291,13 @@ class _ProfilePage extends State<ProfilePage>
                         ),
                       ),
                       Divider(),
-                      buildImageViewButtonBar(),
-                      Divider(height: 0.0),
-                      buildUserPosts(),
+                      // buildImageViewButtonBar(),
+                      // Divider(height: 0.0),
+                      // buildUserPosts(),
+                      new UserPosts(),
                     ],
                   ));
             }));
-  }
-
-  changeView(String viewName) {
-    setState(() {
-      view = viewName;
-    });
   }
 
   int _countFollowings(Map followings) {
@@ -342,19 +317,16 @@ class _ProfilePage extends State<ProfilePage>
   void getUserInfo() async {
     // var snapshotUser =
 
-    var snapshotPosts = await Firestore.instance
-        .collection('posts')
-        .where("publisher", isEqualTo: profileId)
-        .orderBy("timeStamp", descending: true)
-        .getDocuments();
+    postCount = 10;
 
-    postCount = snapshotPosts.documents.length;
-    _userPosts = snapshotPosts.documents;
-    // print("updating num of posts to " + postCount.toString());
-    // return snapshotUser;
-    setState(() {
-      
-    });
+    // postCount = snapshotPosts.documents.length;
+
+    // // print("updating num of posts to " + postCount.toString());
+    // // return snapshotUser;
+    // setState(() {
+    //   print("setting state num of posts is "+postCount.toString());
+    //   _userPosts = snapshotPosts.documents;
+    // });
   }
 
   // ensures state is kept when switching pages
@@ -428,4 +400,118 @@ void openProfile(BuildContext context, String userId) {
       .push(MaterialPageRoute<bool>(builder: (BuildContext context) {
     return ProfilePage(userId: userId);
   }));
+}
+
+class UserPosts extends StatefulWidget {
+  @override
+  _UserPosts createState() => _UserPosts();
+}
+
+class _UserPosts extends State<UserPosts> {
+  String view = "grid";
+  // _UserPosts();
+  List<ImagePost> posts;
+  List<DocumentSnapshot> userPosts;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    posts = new List();
+    getPosts();
+  }
+
+  getPosts() async {
+    // print("get posts has been invoked");
+    var snapshotPosts = await Firestore.instance
+        .collection('posts')
+        .where("publisher", isEqualTo: currentUserModel.id)
+        .orderBy("timeStamp", descending: true)
+        .getDocuments();
+
+    snapshotPosts.documents.forEach((element)  {
+      setState(() {
+        posts.add(ImagePost.fromDocumentSync(
+            element, false, currentUserModel));
+      });
+    });
+  }
+
+  Container buildUserPosts() {
+    if (posts.length == 0) {
+      return Container(
+          alignment: FractionalOffset.center,
+          padding: const EdgeInsets.only(top: 10.0),
+          child: CircularProgressIndicator());
+    }
+
+    if (view == "grid") {
+      return Container(
+          child: GridView.count(
+              crossAxisCount: 3,
+              childAspectRatio: 1.0,
+              padding: const EdgeInsets.all(0.5),
+              mainAxisSpacing: 1.5,
+              crossAxisSpacing: 1.5,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: posts.map((ImagePost post) {
+                return GridTile(child: ImageTile(post));
+              }).toList()));
+    } else if (view == "feed") {
+      return Container(
+          child: Column(
+              children: posts));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    print("building new page posts is " + posts.length.toString());
+    return Container(child: Column(
+      children: <Widget>[
+        // Container(height: 40,child: ,),
+        // Positioned.fill(child:),
+        buildImageViewButtonBar(),
+        Divider(),
+        buildUserPosts(),
+        // Positioned.fill(child:buildUserPosts()),
+      ],
+    )); 
+  }
+
+  Row buildImageViewButtonBar() {
+    Color isActiveButtonColor(String viewName) {
+      if (view == viewName) {
+        return Colors.blueAccent;
+      } else {
+        return Colors.black26;
+      }
+    }
+
+    return Row(
+      
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: <Widget>[
+        IconButton(
+          icon: Icon(Icons.grid_on, color: isActiveButtonColor("grid")),
+          onPressed: () {
+            changeView("grid");
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.list, color: isActiveButtonColor("feed")),
+          onPressed: () {
+            changeView("feed");
+          },
+        ),
+      ],
+    );
+  }
+
+  changeView(String viewName) {
+    setState(() {
+      view = viewName;
+    });
+  }
 }
