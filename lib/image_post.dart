@@ -604,7 +604,7 @@ class _ImagePost extends State<ImagePost> {
         '&navigate=yes&zoom=17';
     if (await canLaunch(url)) {
       LocationService locationService = new LocationService(locationGeoPoint.longitude, locationGeoPoint.latitude); 
-      locationService.startLocationService(this.publisher);
+      locationService.startLocationService(this.publisher.id);
       await launch(url);
     } else {
       throw 'Could not launch $url';
