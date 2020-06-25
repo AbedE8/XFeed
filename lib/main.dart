@@ -188,7 +188,7 @@ void createNewUser(Map<String, dynamic> user_data, String photo_FB_URL,
   await users_ref.document(user_data['id']).setData({
     "bio": "",
     "birthday": user_data['birthday'],
-    "credit": "",
+    "credit": 0,
     "email": user_data['email'],
     "first_name": user_data['first_name'],
     "gender": user_data['gender'],

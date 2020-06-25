@@ -604,7 +604,7 @@ class _ImagePost extends State<ImagePost> {
         '&navigate=yes&zoom=17';
     if (await canLaunch(url)) {
       LocationService locationService = new LocationService(locationGeoPoint.longitude, locationGeoPoint.latitude); 
-      locationService.startLocationService();
+      locationService.startLocationService(this.publisher);
       await launch(url);
     } else {
       throw 'Could not launch $url';
@@ -633,7 +633,7 @@ class _ImagePost extends State<ImagePost> {
         "https://itunes.apple.com/il/app/gett-get-taxi/id412802326?mt=8";
     if (await canLaunch(url)) {
       LocationService locationService = new LocationService(dropOff.longitude, dropOff.latitude); 
-      locationService.startLocationService();
+      locationService.startLocationService(this.publisher);
       await launch(url);
     } else {
       if (Platform.isAndroid) {

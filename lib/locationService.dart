@@ -15,7 +15,7 @@ class LocationService {
     this.dropOffLat = i_dropOffLat;
   }
 
-  void checkIfArrived(userLocation) async {
+  void checkIfArrived(userLocation, publisher) async {
     Geodesy geodesy = Geodesy();
     print("dropOff: lng:" + this.dropOffLng.toString() + " lat:" + this.dropOffLat.toString());
     print("location: lng:" + userLocation.longitude.toString() + " lat:" + userLocation.latitude.toString());
@@ -23,11 +23,11 @@ class LocationService {
     if (geodesy.distanceBetweenTwoGeoPoints(new LatLng(this.dropOffLat, this.dropOffLng), new LatLng(userLocation.latitude, userLocation.longitude)) < 50){
       BackgroundLocation.stopLocationService();
       var serverController = ServerController();
-      await serverController.userArrivedLocation(currentUserModel.id);
+      await serverController.userArrivedLocation(currentUserModel.id, publisher);
     }
   }
 
-  void startLocationService(){
+  void startLocationService(publisher){
     BackgroundLocation.getPermissions(
     onGranted: () {
         print("start location service");
@@ -38,7 +38,7 @@ class LocationService {
     });
     BackgroundLocation.startLocationService();
     BackgroundLocation.getLocationUpdates((location) {
-      checkIfArrived(location);
+      checkIfArrived(location, publisher);
     });
   }
 }

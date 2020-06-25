@@ -117,9 +117,10 @@ class ServerController{
         body: req_body);
   }
   
- userArrivedLocation(String userId) async{
+ userArrivedLocation(String userId, String publisherId) async{
     var req_body = jsonEncode(<String, dynamic>{
-      'userId': userId
+      'userId': userId,
+      'publisherId': publisherId
     });
     await http.post(
         serverUrl + 'userArriveToLocation',
