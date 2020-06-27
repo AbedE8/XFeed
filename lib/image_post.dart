@@ -754,3 +754,8 @@ void goToComments(
     );
   }));
 }
+class GenericImagePost {
+  String imageID;
+  ImagePost image;
+  GenericImagePost(this.imageID, this.image);
+}

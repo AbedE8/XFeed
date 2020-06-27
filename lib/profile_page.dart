@@ -294,7 +294,7 @@ class _ProfilePage extends State<ProfilePage>
                       // buildImageViewButtonBar(),
                       // Divider(height: 0.0),
                       // buildUserPosts(),
-                      new UserPosts(),
+                      new UserPosts(profileId),
                     ],
                   ));
             }));
@@ -403,13 +403,16 @@ void openProfile(BuildContext context, String userId) {
 }
 
 class UserPosts extends StatefulWidget {
+  final String profileID;
+  const UserPosts(this.profileID);
   @override
-  _UserPosts createState() => _UserPosts();
+  _UserPosts createState() => _UserPosts(profileID);
 }
 
 class _UserPosts extends State<UserPosts> {
   String view = "grid";
-  // _UserPosts();
+  final String profileID;
+  _UserPosts(this.profileID);
   List<ImagePost> posts;
   List<DocumentSnapshot> userPosts;
   @override
@@ -424,7 +427,7 @@ class _UserPosts extends State<UserPosts> {
     // print("get posts has been invoked");
     var snapshotPosts = await Firestore.instance
         .collection('posts')
-        .where("publisher", isEqualTo: currentUserModel.id)
+        .where("publisher", isEqualTo: profileID)
         .orderBy("timeStamp", descending: true)
         .getDocuments();
 
@@ -470,12 +473,9 @@ class _UserPosts extends State<UserPosts> {
     print("building new page posts is " + posts.length.toString());
     return Container(child: Column(
       children: <Widget>[
-        // Container(height: 40,child: ,),
-        // Positioned.fill(child:),
         buildImageViewButtonBar(),
         Divider(),
         buildUserPosts(),
-        // Positioned.fill(child:buildUserPosts()),
       ],
     )); 
   }
