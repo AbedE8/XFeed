@@ -26,6 +26,7 @@ class _ProfilePage extends State<ProfilePage>
   bool isFollowing = false;
   bool followButtonClicked = false;
   int postCount = 0;
+  int userCredit = 0;
   int followerCount = 0;
   int followingCount = 0;
   User userProfile;
@@ -88,7 +89,6 @@ class _ProfilePage extends State<ProfilePage>
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     getUserInfo();
   }
@@ -162,7 +162,7 @@ class _ProfilePage extends State<ProfilePage>
       );
     }
 
-    Container buildProfileFollowButton(User user) {
+    Container buildProfileButton(User user) {
       // viewing your own profile - should show edit button
 
       if (currentUserModel == null || user.id != currentUserModel.id) {
@@ -213,8 +213,6 @@ class _ProfilePage extends State<ProfilePage>
           }
         },
       ));
-      // },
-      // ));
     }
 
     return Scaffold(
@@ -262,13 +260,14 @@ class _ProfilePage extends State<ProfilePage>
                                             MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
                                           buildStatColumn("posts", postCount),
+                                          buildStatColumn("credit", userCredit),
                                         ],
                                       ),
                                       Row(
                                           mainAxisAlignment:
                                               MainAxisAlignment.spaceEvenly,
                                           children: <Widget>[
-                                            buildProfileFollowButton(user)
+                                            buildProfileButton(user)
                                           ]),
                                     ],
                                   ),
@@ -317,8 +316,9 @@ class _ProfilePage extends State<ProfilePage>
   void getUserInfo() async {
     // var snapshotUser =
 
+    /*TODO: set the num of user posts and the credit but from the server and not from the current instance of user.*/
+    userCredit = currentUserModel.credit;
     postCount = 10;
-
     // postCount = snapshotPosts.documents.length;
 
     // // print("updating num of posts to " + postCount.toString());
@@ -424,7 +424,6 @@ class _UserPosts extends State<UserPosts> {
   }
 
   getPosts() async {
-    // print("get posts has been invoked");
     var snapshotPosts = await Firestore.instance
         .collection('posts')
         .where("publisher", isEqualTo: profileID)

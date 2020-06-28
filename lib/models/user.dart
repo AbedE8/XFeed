@@ -9,6 +9,7 @@ class User {
   final String username;
   final String displayName;
   final String bio;
+  int credit;
   UserPreference preferences;
   User(
       {this.username,
@@ -17,7 +18,8 @@ class User {
       this.email,
       this.displayName,
       this.bio,
-      this.preferences});
+      this.preferences,
+      this.credit});
 
   Future<void> setUserPref() async {
     if (this.preferences == null) {
@@ -36,13 +38,13 @@ class User {
         id: document.documentID,
         displayName: document['first_name'],
         bio: document['bio'],
-        preferences: null);
+        preferences: null,
+        credit: document['credit'],);
   }
 
   static Future<User> fromID(String userId) async {
     DocumentSnapshot user =
         await Firestore.instance.collection("users").document(userId).get();
-
     if (user.data == null) {
       print("uncorrect userid "+userId);
       return null;
@@ -54,7 +56,8 @@ class User {
           id: userId,
           displayName: user.data['first_name'],
           bio: user.data['bio'],
-          preferences: null);
+          preferences: null,
+          credit: user.data['credit'],);
     }
   }
 }

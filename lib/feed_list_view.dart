@@ -117,8 +117,9 @@ class _MyFeedListViewState extends State<FeedListView> {
       Future<List<ImagePost>> newPosts =  fetchPostsFromId(postsToFetch);
       newPosts.then((value) => {
         if(value!=null){
-          value.forEach((element) {updateList(element);})});
+          value.forEach((element) => {updateList(element)})
         }
+      });
       print("has " + postsID.length.toString());
     }
   }
