@@ -255,10 +255,10 @@ Future<DocumentSnapshot> tryCreateUserRecordFB(BuildContext context) async {
         userRecord = await users_ref.document(user_data['id']).get();
       } else {
         //TODO : download user photo once registered and upload it
-        print("user phtot updated");
-        await users_ref
-            .document(user_data['id'])
-            .updateData({"profile_pic_url": photo_FB_URL});
+        // print("user phtot updated");
+        // await users_ref
+        //     .document(user_data['id'])
+        //     .updateData({"profile_pic_url": photo_FB_URL});
       }
       userRecordReturn = userRecord;
       print("######user record created######");
@@ -503,6 +503,14 @@ class _HomePageState extends State<HomePage> {
         // _downloadImage(currentUserModel.photoUrl);
       });
       await currentUserModel.setUserPref();
+      Firestore.instance
+      .collection('users')
+      .document(currentUserModel.id)
+      .snapshots()
+      .listen((event) {
+        print("user DB has been changed, creating new user");
+        currentUserModel = User.fromDocument(event);
+      });
     }
   }
 

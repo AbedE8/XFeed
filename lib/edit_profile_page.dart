@@ -13,6 +13,7 @@ class EditProfilePage extends StatelessWidget {
   changeProfilePhoto(BuildContext parentContext) async {
     var imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
     uploadFile(imageFile, (downloadImg) async {
+      print("user uploadphoto cb has been called");
       await Firestore.instance
           .collection("users")
           .document(currentUserModel.id)

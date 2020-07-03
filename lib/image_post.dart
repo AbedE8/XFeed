@@ -33,7 +33,8 @@ class ImagePost extends StatefulWidget {
       this.activities,
       this.timeStr,
       this.numComments,
-      this.itsLocationFeed});
+      this.itsLocationFeed,
+      this.numOfInnerPosts});
 
   static var users_reference = Firestore.instance.collection('users');
   static var posts_reference = Firestore.instance.collection('posts');
@@ -59,7 +60,8 @@ class ImagePost extends StatefulWidget {
     return postTime;
   }
 
-  static Future<ImagePost> fromDocument(DocumentSnapshot document, bool itsLocationFeed) async {
+  static Future<ImagePost> fromDocument(
+      DocumentSnapshot document, bool itsLocationFeed) async {
     var userRef = document.data['publisher'];
     // var userData = await users_reference.document(userRef).get();
     User publisher = await User.fromID(userRef);
@@ -69,6 +71,10 @@ class ImagePost extends StatefulWidget {
     String timePassed = timeago.format(now.subtract(differ));
     // int numComments = await getCommentsCount(document.documentID);
     int numComments = document.data['comments'];
+    int len = 0;
+    if (!itsLocationFeed) {
+      len = await getNumOfInnerPosts(document.data['feature_name']);
+    }
     return ImagePost(
         publisher: publisher,
         location: document.data['feature_name'],
@@ -80,9 +86,12 @@ class ImagePost extends StatefulWidget {
         activities: document.data['category'],
         timeStr: timePassed,
         numComments: numComments,
-        itsLocationFeed: itsLocationFeed);
+        itsLocationFeed: itsLocationFeed,
+        numOfInnerPosts: len);
   }
-  static ImagePost fromDocumentSync(DocumentSnapshot document, bool itsLocationFeed, User user)  {
+
+  static ImagePost fromDocumentSync(DocumentSnapshot document,
+      bool itsLocationFeed, User user, int innerPosts) {
     // var userRef = document.data['publisher'];
     // var userData = await users_reference.document(userRef).get();
     DateTime postTime = document.data['timeStamp'].toDate();
@@ -101,9 +110,21 @@ class ImagePost extends StatefulWidget {
         activities: document.data['category'],
         timeStr: timePassed,
         numComments: numComments,
-        itsLocationFeed: itsLocationFeed);
+        itsLocationFeed: itsLocationFeed,
+        numOfInnerPosts: innerPosts);
   }
-  static Future<ImagePost> fromJSON(Map<String, dynamic> data, bool itsLocationFeed) async {
+
+  static Future<int> getNumOfInnerPosts(String location) async {
+    var snapGeoLocationDB = await Firestore.instance
+        .collection("geoLocation")
+        .where("d.name", isEqualTo: location)
+        .getDocuments();
+    int len = snapGeoLocationDB.documents.first['d']['posts'].length;
+    return len;
+  }
+
+  static Future<ImagePost> fromJSON(
+      Map<String, dynamic> data, bool itsLocationFeed) async {
     var userRef = data['publisher'];
     // DocumentSnapshot userData = await users_reference.document(userRef).get();
     User publisher = await User.fromID(userRef);
@@ -114,6 +135,10 @@ class ImagePost extends StatefulWidget {
     Duration differ = now.difference(postTime);
     String timePassed = timeago.format(now.subtract(differ));
     int numComments = data['comments'];
+    int len = 0;
+    if (!itsLocationFeed) {
+      len = await getNumOfInnerPosts(data['feature_name']);
+    }
     return ImagePost(
         publisher: publisher,
         location: data['feature_name'],
@@ -125,21 +150,25 @@ class ImagePost extends StatefulWidget {
         activities: data['category'],
         timeStr: timePassed,
         numComments: numComments,
-        itsLocationFeed: itsLocationFeed);
+        itsLocationFeed: itsLocationFeed,
+        numOfInnerPosts: len);
   }
 
   //TODO: inc view only if asked for (location_feed dont need to inc view on the recived posts but get_feed should inc).
-  static Future<ImagePost> fromID(String postID, bool itsLocationFeedPost) async {
+  static Future<ImagePost> fromID(
+      String postID, bool itsLocationFeedPost) async {
     DocumentSnapshot postData = await posts_reference.document(postID).get();
     var userRef = postData.data['publisher'];
     // var userData = await users_reference.document(userRef).get();
     User publisher = await User.fromID(userRef);
+    int len = 0;
     if (!itsLocationFeedPost) {
       posts_reference
-        .document(postID)
-        .updateData({'views': FieldValue.increment(1)});
+          .document(postID)
+          .updateData({'views': FieldValue.increment(1)});
+      len = await getNumOfInnerPosts(postData.data['feature_name']);
     }
-    return fromDocumentSync(postData, itsLocationFeedPost,publisher);
+    return fromDocumentSync(postData, itsLocationFeedPost, publisher, len);
   }
 
   int getLikeCount(var likes) {
@@ -169,6 +198,7 @@ class ImagePost extends StatefulWidget {
   final activities;
   final int numComments;
   final bool itsLocationFeed;
+  final int numOfInnerPosts;
   // FloatingActionButton loc = new FloatingActionButton(onPressed: null)
   _ImagePost createState() => _ImagePost(
       mediaUrl: this.mediaUrl,
@@ -182,7 +212,8 @@ class ImagePost extends StatefulWidget {
       activities: this.activities,
       timeStr: timeStr,
       numComments: this.numComments,
-      itsLocationFeed: this.itsLocationFeed);
+      itsLocationFeed: this.itsLocationFeed,
+      numOfInnerPosts: this.numOfInnerPosts);
 }
 
 class _ImagePost extends State<ImagePost> {
@@ -191,10 +222,11 @@ class _ImagePost extends State<ImagePost> {
   final String location;
   final String description;
   final List<dynamic>
-  activities; //this is the same of categories, need to delete it later
+      activities; //this is the same of categories, need to delete it later
   final String timeStr;
   final int numComments;
   final bool itsLocationFeed;
+  final int numOfInnerPosts;
   Map likes;
   int likeCount;
   final String postId;
@@ -221,21 +253,14 @@ class _ImagePost extends State<ImagePost> {
       this.activities,
       this.timeStr,
       this.numComments,
-      this.itsLocationFeed});
+      this.itsLocationFeed,
+      this.numOfInnerPosts});
   @override
   void initState() {
-    print("in init state postId "+postId);
+    print("in init state postId " + postId);
     categories = parseActivities(this.activities.toString());
-    // getPuplisher();
-    
   }
-  // getPuplisher() async{
-  //   puplisher = await User.fromID(ownerId);
-  //   setState(() {
-        
-  //   });
-    
-  // }
+
   GestureDetector buildLikeIcon() {
     Color color;
     IconData icon;
@@ -304,27 +329,31 @@ class _ImagePost extends State<ImagePost> {
       return Text("owner error");
     }
 
-            return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: CachedNetworkImageProvider(
-                      publisher.photoUrl),
-                  backgroundColor: Colors.grey,
+    return ListTile(
+        leading: CircleAvatar(
+          backgroundImage: CachedNetworkImageProvider(publisher.photoUrl),
+          backgroundColor: Colors.grey,
+        ),
+        title: GestureDetector(
+          child: Text(publisher.username, style: boldStyle),
+          onTap: () {
+            openProfile(context, ownerId);
+          },
+        ),
+        subtitle: GestureDetector(
+          child: Text(this.location),
+          onTap: () {},
+        ),
+        trailing: !this.itsLocationFeed /*&& (this.numOfInnerPosts -1 != 0)*/
+            ? Column(children: [
+                IconButton(
+                  icon: Icon(Icons.menu),
+                  onPressed: () =>
+                      openLocationFeed(context, this.location, ownerId),
                 ),
-                title: GestureDetector(
-                  child: Text(publisher.username, style: boldStyle),
-                  onTap: () {
-                    openProfile(context, ownerId);
-                  },
-                ),
-                subtitle: GestureDetector(
-                  child: Text(this.location),
-                  onTap: () {},
-                ),
-                trailing: !this.itsLocationFeed ? IconButton(
-                    icon: Icon(Icons.menu),
-                    onPressed: () => openLocationFeed(context, this.location),
-                  ) : null
-                );
+                // Expanded(child: Text("${this.numOfInnerPosts}"))
+              ])
+            : null);
   }
 
   Container loadingPlaceHolder = Container(
@@ -502,24 +531,22 @@ class _ImagePost extends State<ImagePost> {
         ),
         this.numComments == 0 || this.numComments == null
             ? Container()
-            : Row(crossAxisAlignment: CrossAxisAlignment.start,
-              
-             children: [
-               Container(
-                 margin: const EdgeInsets.fromLTRB(20, 5, 0, 5),
-                 child: GestureDetector(
-                  child: Text(
-                    "View all ${this.numComments} comments...",
+            : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 5, 0, 5),
+                  child: GestureDetector(
+                    child: Text(
+                      "View all ${this.numComments} comments...",
+                    ),
+                    onTap: () {
+                      goToComments(
+                          context: context,
+                          postId: postId,
+                          ownerId: ownerId,
+                          mediaUrl: mediaUrl);
+                    },
                   ),
-                  onTap: () {
-                    goToComments(
-                        context: context,
-                        postId: postId,
-                        ownerId: ownerId,
-                        mediaUrl: mediaUrl);
-                  },
-                ),)
-                
+                )
               ]),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,7 +562,6 @@ class _ImagePost extends State<ImagePost> {
     );
   }
 
-
   takeMe() {
     print("takeMe has been pressed");
     showDialog(
@@ -550,39 +576,37 @@ class _ImagePost extends State<ImagePost> {
       // title: const Text('Going with:'),
       actions: <Widget>[
         new RaisedButton(
-          elevation: 0.0,
-          onPressed: () => {runWaze(this.location)},
-          child: new Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              new Image.asset(
-                'assets/images/waze-logo.jpg',
-                height: 90.0,
-                width: 90.0,
-              ),
-            ],
-          ),
-          color: Colors.white
-        ),
+            elevation: 0.0,
+            onPressed: () => {runWaze(this.location)},
+            child: new Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                new Image.asset(
+                  'assets/images/waze-logo.jpg',
+                  height: 90.0,
+                  width: 90.0,
+                ),
+              ],
+            ),
+            color: Colors.white),
         // Padding(
         //   padding: const EdgeInsets.only(right: 0.0),
         // ),
         new RaisedButton(
-          elevation: 0.0,
-          onPressed: () => {runGett(this.location)},
-          child: new Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              new Image.asset(
-                'assets/images/Gett_logo1.png',
-                height: 90.0,
-                width: 100.0,
-                fit: BoxFit.cover,
-              ),
-            ],
-          ),
-          color: Colors.white
-        ),
+            elevation: 0.0,
+            onPressed: () => {runGett(this.location)},
+            child: new Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                new Image.asset(
+                  'assets/images/Gett_logo1.png',
+                  height: 90.0,
+                  width: 100.0,
+                  fit: BoxFit.cover,
+                ),
+              ],
+            ),
+            color: Colors.white),
         Padding(
           padding: const EdgeInsets.only(right: 20.0),
         ),
@@ -603,7 +627,8 @@ class _ImagePost extends State<ImagePost> {
         locationGeoPoint.longitude.toString() +
         '&navigate=yes&zoom=17';
     if (await canLaunch(url)) {
-      LocationService locationService = new LocationService(locationGeoPoint.longitude, locationGeoPoint.latitude); 
+      LocationService locationService = new LocationService(
+          locationGeoPoint.longitude, locationGeoPoint.latitude);
       locationService.startLocationService(this.publisher.id);
       await launch(url);
     } else {
@@ -632,7 +657,8 @@ class _ImagePost extends State<ImagePost> {
     String urlIosStore =
         "https://itunes.apple.com/il/app/gett-get-taxi/id412802326?mt=8";
     if (await canLaunch(url)) {
-      LocationService locationService = new LocationService(dropOff.longitude, dropOff.latitude); 
+      LocationService locationService =
+          new LocationService(dropOff.longitude, dropOff.latitude);
       locationService.startLocationService(this.publisher);
       await launch(url);
     } else {
@@ -754,6 +780,7 @@ void goToComments(
     );
   }));
 }
+
 class GenericImagePost {
   String imageID;
   ImagePost image;

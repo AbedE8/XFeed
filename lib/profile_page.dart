@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
+import 'following_places.dart';
 import 'main.dart';
 import 'image_post.dart';
 import 'dart:async';
@@ -30,6 +31,7 @@ class _ProfilePage extends State<ProfilePage>
   int followerCount = 0;
   int followingCount = 0;
   User userProfile;
+  int userFollowingPlaces = 0;
   List<DocumentSnapshot> _userPosts = new List();
 
   _ProfilePage(this.profileId);
@@ -137,31 +139,6 @@ class _ProfilePage extends State<ProfilePage>
       return posts.toList();
     }
 
-    Container buildFollowButton(
-        {String text,
-        Color backgroundcolor,
-        Color textColor,
-        Color borderColor,
-        Function function}) {
-      return Container(
-        padding: EdgeInsets.only(top: 2.0),
-        child: FlatButton(
-            onPressed: function,
-            child: Container(
-              decoration: BoxDecoration(
-                  color: backgroundcolor,
-                  border: Border.all(color: borderColor),
-                  borderRadius: BorderRadius.circular(5.0)),
-              alignment: Alignment.center,
-              child: Text(text,
-                  style:
-                      TextStyle(color: textColor, fontWeight: FontWeight.bold)),
-              width: 250.0,
-              height: 27.0,
-            )),
-      );
-    }
-
     Container buildProfileButton(User user) {
       // viewing your own profile - should show edit button
 
@@ -259,8 +236,14 @@ class _ProfilePage extends State<ProfilePage>
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
-                                          buildStatColumn("posts", postCount),
-                                          buildStatColumn("credit", userCredit),
+                                          buildStatColumn("posts", 10),
+                                          buildStatColumn(
+                                              "credit", userProfile.credit),
+                                          GestureDetector(
+                                            child: buildStatColumn("places",
+                                                userProfile.followingPlaces),
+                                            onTap: (){showFollowingPlaces(profileId, context);},
+                                          ),
                                         ],
                                       ),
                                       Row(
@@ -290,15 +273,19 @@ class _ProfilePage extends State<ProfilePage>
                         ),
                       ),
                       Divider(),
-                      // buildImageViewButtonBar(),
-                      // Divider(height: 0.0),
-                      // buildUserPosts(),
                       new UserPosts(profileId),
                     ],
                   ));
             }));
   }
 
+  void showFollowingPlaces(String profileId, var context) {
+    print("about to fetch following places");
+    Navigator.of(context)
+      .push(MaterialPageRoute<bool>(builder: (BuildContext context) {
+    return FollowingPlaces(userId:profileId);
+  }));
+  }
   int _countFollowings(Map followings) {
     int count = 0;
 
@@ -317,21 +304,39 @@ class _ProfilePage extends State<ProfilePage>
     // var snapshotUser =
 
     /*TODO: set the num of user posts and the credit but from the server and not from the current instance of user.*/
-    userCredit = currentUserModel.credit;
+    
     postCount = 10;
-    // postCount = snapshotPosts.documents.length;
 
-    // // print("updating num of posts to " + postCount.toString());
-    // // return snapshotUser;
-    // setState(() {
-    //   print("setting state num of posts is "+postCount.toString());
-    //   _userPosts = snapshotPosts.documents;
-    // });
   }
 
   // ensures state is kept when switching pages
   @override
   bool get wantKeepAlive => false;
+}
+
+Container buildFollowButton(
+    {String text,
+    Color backgroundcolor,
+    Color textColor,
+    Color borderColor,
+    double width = 250.0,
+    Function function}) {
+  return Container(
+    padding: EdgeInsets.only(top: 2.0),
+    child: FlatButton(
+        onPressed: function,
+        child: Container(
+          decoration: BoxDecoration(
+              color: backgroundcolor,
+              border: Border.all(color: borderColor),
+              borderRadius: BorderRadius.circular(5.0)),
+          alignment: Alignment.center,
+          child: Text(text,
+              style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+          width: width,
+          height: 27.0,
+        )),
+  );
 }
 
 class ImageTile extends StatelessWidget {
@@ -430,10 +435,10 @@ class _UserPosts extends State<UserPosts> {
         .orderBy("timeStamp", descending: true)
         .getDocuments();
 
-    snapshotPosts.documents.forEach((element)  {
+    snapshotPosts.documents.forEach((element) {
       setState(() {
-        posts.add(ImagePost.fromDocumentSync(
-            element, false, currentUserModel));
+        posts.add(
+            ImagePost.fromDocumentSync(element, false, currentUserModel, 0));
       });
     });
   }
@@ -460,9 +465,7 @@ class _UserPosts extends State<UserPosts> {
                 return GridTile(child: ImageTile(post));
               }).toList()));
     } else if (view == "feed") {
-      return Container(
-          child: Column(
-              children: posts));
+      return Container(child: Column(children: posts));
     }
   }
 
@@ -470,13 +473,14 @@ class _UserPosts extends State<UserPosts> {
   Widget build(BuildContext context) {
     // TODO: implement build
     print("building new page posts is " + posts.length.toString());
-    return Container(child: Column(
+    return Container(
+        child: Column(
       children: <Widget>[
         buildImageViewButtonBar(),
         Divider(),
         buildUserPosts(),
       ],
-    )); 
+    ));
   }
 
   Row buildImageViewButtonBar() {
@@ -489,7 +493,6 @@ class _UserPosts extends State<UserPosts> {
     }
 
     return Row(
-      
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: <Widget>[
         IconButton(

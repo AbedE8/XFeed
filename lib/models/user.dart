@@ -11,6 +11,7 @@ class User {
   final String bio;
   int credit;
   UserPreference preferences;
+  int followingPlaces;
   User(
       {this.username,
       this.id,
@@ -19,7 +20,8 @@ class User {
       this.displayName,
       this.bio,
       this.preferences,
-      this.credit});
+      this.credit,
+      this.followingPlaces});
 
   Future<void> setUserPref() async {
     if (this.preferences == null) {
@@ -27,9 +29,11 @@ class User {
       this.preferences = pref;
     }
   }
-  void setUserPhoto(String imgPath){
+
+  void setUserPhoto(String imgPath) {
     this.photoUrl = imgPath;
   }
+
   factory User.fromDocument(DocumentSnapshot document) {
     return User(
         email: document['email'],
@@ -39,14 +43,15 @@ class User {
         displayName: document['first_name'],
         bio: document['bio'],
         preferences: null,
-        credit: document['credit'],);
+        credit: document['credit'],
+        followingPlaces: document['followingPlaces']);
   }
 
   static Future<User> fromID(String userId) async {
     DocumentSnapshot user =
         await Firestore.instance.collection("users").document(userId).get();
     if (user.data == null) {
-      print("uncorrect userid "+userId);
+      print("uncorrect userid " + userId);
       return null;
     } else {
       return User(
@@ -57,7 +62,8 @@ class User {
           displayName: user.data['first_name'],
           bio: user.data['bio'],
           preferences: null,
-          credit: user.data['credit'],);
+          credit: user.data['credit'],
+          followingPlaces: user.data['followingPlaces']);
     }
   }
 }
@@ -104,33 +110,38 @@ class UserPreference {
         this.min_age.toString() +
         " max_age: " +
         this.max_age.toString() +
-        " location lat: "+this.location.latitude.toString()+
-        " location long: "+this.location.longitude.toString()+
-        " categories: "+this.categories.toString()+
-        " radius: "+this.radious.toInt().toString();
+        " location lat: " +
+        this.location.latitude.toString() +
+        " location long: " +
+        this.location.longitude.toString() +
+        " categories: " +
+        this.categories.toString() +
+        " radius: " +
+        this.radious.toInt().toString();
   }
-  bool isSameCategories(List cat1, List cat2){
-    if(cat1.length != cat2.length){
+
+  bool isSameCategories(List cat1, List cat2) {
+    if (cat1.length != cat2.length) {
       return false;
     }
     for (var item in cat1) {
-      if(!cat2.contains(item)){
+      if (!cat2.contains(item)) {
         return false;
       }
     }
     return true;
   }
-  bool isEqual(UserPreference other){
-    
-    return (this.min_age == other.min_age)
-           && (this.max_age == other.max_age)
-           && (this.radious.toInt() == other.radious.toInt())
-           && (isSameCategories(this.categories, other.categories))
-           && (this.location.latitude == other.location.latitude)
-           && (this.location.longitude == other.location.longitude);
-  }  
-  
+
+  bool isEqual(UserPreference other) {
+    return (this.min_age == other.min_age) &&
+        (this.max_age == other.max_age) &&
+        (this.radious.toInt() == other.radious.toInt()) &&
+        (isSameCategories(this.categories, other.categories)) &&
+        (this.location.latitude == other.location.latitude) &&
+        (this.location.longitude == other.location.longitude);
+  }
 }
+
 class UserInChatList {
   final User user;
   final String lastMessage;
