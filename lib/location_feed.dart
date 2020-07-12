@@ -57,7 +57,6 @@ class _LocationFeedPage extends State<LocationFeedPage> {
           .document(placeID)
           .setData({'timeStamp': DateTime.now(), 'by': postOwnerId}).then(
               (value) => {
-                    // {'views': FieldValue.increment(1)}
                     Firestore.instance
                         .collection('users')
                         .document(currentUserModel.id)

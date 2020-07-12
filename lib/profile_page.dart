@@ -236,7 +236,7 @@ class _ProfilePage extends State<ProfilePage>
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
-                                          buildStatColumn("posts", 10),
+                                          buildStatColumn("posts", postCount),
                                           buildStatColumn(
                                               "credit", userProfile.credit),
                                           GestureDetector(
@@ -273,7 +273,11 @@ class _ProfilePage extends State<ProfilePage>
                         ),
                       ),
                       Divider(),
-                      new UserPosts(profileId),
+                      new UserPosts(user,(numPosts){
+                        setState(() {
+                          postCount = numPosts;
+                        });
+                      }),
                     ],
                   ));
             }));
@@ -305,7 +309,7 @@ class _ProfilePage extends State<ProfilePage>
 
     /*TODO: set the num of user posts and the credit but from the server and not from the current instance of user.*/
     
-    postCount = 10;
+    postCount = 0;
 
   }
 
@@ -408,16 +412,18 @@ void openProfile(BuildContext context, String userId) {
 }
 
 class UserPosts extends StatefulWidget {
-  final String profileID;
-  const UserPosts(this.profileID);
+  final User user;
+  const UserPosts(this.user,this.updatepostsCB);
+  final Function updatepostsCB;
   @override
-  _UserPosts createState() => _UserPosts(profileID);
+  _UserPosts createState() => _UserPosts(this.user,this.updatepostsCB);
 }
 
 class _UserPosts extends State<UserPosts> {
   String view = "grid";
-  final String profileID;
-  _UserPosts(this.profileID);
+  final User user;
+  final Function updatepostsCB;
+  _UserPosts(this.user,this.updatepostsCB);
   List<ImagePost> posts;
   List<DocumentSnapshot> userPosts;
   @override
@@ -431,14 +437,14 @@ class _UserPosts extends State<UserPosts> {
   getPosts() async {
     var snapshotPosts = await Firestore.instance
         .collection('posts')
-        .where("publisher", isEqualTo: profileID)
+        .where("publisher", isEqualTo: user.id)
         .orderBy("timeStamp", descending: true)
         .getDocuments();
-
+  updatepostsCB(snapshotPosts.documents.length);
     snapshotPosts.documents.forEach((element) {
       setState(() {
         posts.add(
-            ImagePost.fromDocumentSync(element, false, currentUserModel, 0));
+            ImagePost.fromDocumentSync(element, false, user, 0));
       });
     });
   }

@@ -502,14 +502,16 @@ class _HomePageState extends State<HomePage> {
         print("Showing Home Screen");
         // _downloadImage(currentUserModel.photoUrl);
       });
-      await currentUserModel.setUserPref();
+     await currentUserModel.setUserPref();
       Firestore.instance
       .collection('users')
       .document(currentUserModel.id)
       .snapshots()
       .listen((event) {
         print("user DB has been changed, creating new user");
+        UserPreference pref = currentUserModel.preferences;
         currentUserModel = User.fromDocument(event);
+        currentUserModel.setUserPrefSync(pref);
       });
     }
   }

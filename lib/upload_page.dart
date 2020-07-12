@@ -58,10 +58,10 @@ class _Uploader extends State<Uploader> {
   String currentText = "";
   num _max_return_near_places = 100;
   bool _valideLocation = true;
-  int _placesWithenRadius = 500; //in meters
+  int _placesWithenRadius = 50; //in meters
   static String kGoogleApiKey = "AIzaSyCIsdZDKCzkVb6pb9cb02_ec-Tih_1qhO4";
   GoogleMapsPlaces _places = GoogleMapsPlaces(apiKey: kGoogleApiKey);
-  List<String> _streetAddresses;
+  List<StreetAddress> _streetAddresses;
   _Uploader({this.file});
   @override
   initState() {
@@ -138,13 +138,28 @@ class _Uploader extends State<Uploader> {
         _id_from_name[item[parser]]=item['place_id'];
       }
     }
-    suggestions.addAll(_streetAddresses);
+    suggestions.addAll(_streetAddresses.map((e) => e.placeName).toList());
     textField.updateSuggestions(suggestions);
   }
 
   Future<List<Map<String, dynamic>>> fetchDataAutocomplete(text) async {
-    String url =
-        "https://maps.googleapis.com/maps/api/place/autocomplete/json?" +
+    
+    String url;
+    if(_streetAddresses.length != 0 ){
+      url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?" +
+            "input=" +
+            text + //text to be completed
+            "&types=establishment" +
+            "&location=${_streetAddresses.first.lat},${_streetAddresses.first.long}" +
+            "&radius=" +
+            _placesWithenRadius.toString() +
+            "&strictbounds" +
+            "&key=" +
+            kGoogleApiKey;
+
+    }
+    else{
+       url = "https://maps.googleapis.com/maps/api/place/autocomplete/json?" +
             "input=" +
             text + //text to be completed
             "&types=establishment" +
@@ -154,6 +169,10 @@ class _Uploader extends State<Uploader> {
             "&strictbounds" +
             "&key=" +
             kGoogleApiKey;
+
+    }
+     
+        
     List<Map<String, dynamic>> data = await getDataFromUrl(url, 'predictions',true);
     print("recieved data length is " + data.length.toString());
     return data;
@@ -208,7 +227,9 @@ class _Uploader extends State<Uploader> {
       // print("formatted addres "+item['formatted_address']);
       if (item.containsKey('formatted_address')) {
         print("adding formatted addres " + item['formatted_address']);
-        _streetAddresses.add(item['formatted_address']);
+        _streetAddresses.add(StreetAddress(item['formatted_address'], 
+        item['geometry']['location']['lat'].toString(), 
+        item['geometry']['location']['lng'].toString()));
       }
     }
     setState(() {});
@@ -282,7 +303,7 @@ class _Uploader extends State<Uploader> {
                             if (_streetAddresses != null &&
                                 _streetAddresses.length != 0) {
                               return buildLocationButton(
-                                  _streetAddresses[index]);
+                                  _streetAddresses[index].placeName);
                             } else {
                               return Container();
                             }
@@ -690,4 +711,10 @@ Future<String> uploadImage(var imageFile) async {
 
   String downloadUrl = await (await uploadTask.onComplete).ref.getDownloadURL();
   return downloadUrl;
+}
+class StreetAddress {
+  String placeName;
+  String lat;
+  String long;
+  StreetAddress(this.placeName,this.lat, this.long);
 }

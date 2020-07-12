@@ -29,7 +29,9 @@ class User {
       this.preferences = pref;
     }
   }
-
+  void setUserPrefSync(UserPreference pref){
+    this.preferences = pref;
+  }
   void setUserPhoto(String imgPath) {
     this.photoUrl = imgPath;
   }
