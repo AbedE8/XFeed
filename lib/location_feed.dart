@@ -52,6 +52,7 @@ class _LocationFeedPage extends State<LocationFeedPage> {
     if (follow) {
       Future<DocumentSnapshot> geoLocationSnap = Firestore.instance.collection("geoLocation").document(placeID).get();
       geoLocationSnap.then((geoLocation) => {
+        /* TODO: delete the data from field d and add to it the rellevant data if needed.*/
         Firestore.instance
             .collection('activities')
             .document(currentUserModel.id)

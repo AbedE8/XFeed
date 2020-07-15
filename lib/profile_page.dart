@@ -236,7 +236,8 @@ class _ProfilePage extends State<ProfilePage>
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
                                         children: <Widget>[
-                                          buildStatColumn("posts", postCount),
+                                          buildStatColumn(
+                                              "posts", postCount),
                                           buildStatColumn(
                                               "credit", userProfile.credit),
                                           GestureDetector(
@@ -245,6 +246,20 @@ class _ProfilePage extends State<ProfilePage>
                                             onTap: (){showFollowingPlaces(profileId, context);},
                                           ),
                                         ],
+                                      ),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center ,
+                                        children: <Widget>[
+                                          Icon(Icons.star, color: Colors.amber),             
+                                          Text(userProfile.cuLevel,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.amber[300],
+                                                fontSize: 15.0,
+                                                fontWeight: FontWeight.w400,
+                                                fontStyle: FontStyle.normal)
+                                          )
+                                        ]
                                       ),
                                       Row(
                                           mainAxisAlignment:

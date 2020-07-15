@@ -196,7 +196,8 @@ void createNewUser(Map<String, dynamic> user_data, String photo_FB_URL,
     "post_distribution": 250,
     "profile_pic_url": photo_FB_URL,
     "registration_date": DateTime.now(),
-    "username": userName
+    "username": userName,
+    "cuLevel": "FIRST"
   });
   //After creating user record we should update user preference to default
   Coordinates current_cordinate = await getUserCordinate();

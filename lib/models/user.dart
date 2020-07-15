@@ -12,6 +12,7 @@ class User {
   int credit;
   UserPreference preferences;
   int followingPlaces;
+  String cuLevel;
   User(
       {this.username,
       this.id,
@@ -21,7 +22,8 @@ class User {
       this.bio,
       this.preferences,
       this.credit,
-      this.followingPlaces});
+      this.followingPlaces,
+      this.cuLevel});
 
   Future<void> setUserPref() async {
     if (this.preferences == null) {
@@ -46,7 +48,8 @@ class User {
         bio: document['bio'],
         preferences: null,
         credit: document['credit'],
-        followingPlaces: document['followingPlaces']);
+        followingPlaces: document['followingPlaces'],
+        cuLevel: document['cuLevel']);
   }
 
   static Future<User> fromID(String userId) async {
@@ -65,7 +68,8 @@ class User {
           bio: user.data['bio'],
           preferences: null,
           credit: user.data['credit'],
-          followingPlaces: user.data['followingPlaces']);
+          followingPlaces: user.data['followingPlaces'],
+          cuLevel: user.data['cuLevel']);
     }
   }
 }
