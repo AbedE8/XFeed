@@ -50,19 +50,22 @@ class _LocationFeedPage extends State<LocationFeedPage> {
       return;
     }
     if (follow) {
-      Firestore.instance
-          .collection('activities')
-          .document(currentUserModel.id)
-          .collection('followingPlaces')
-          .document(placeID)
-          .setData({'timeStamp': DateTime.now(), 'by': postOwnerId}).then(
-              (value) => {
-                    Firestore.instance
-                        .collection('users')
-                        .document(currentUserModel.id)
-                        .updateData(
-                            {'followingPlaces': FieldValue.increment(1)})
-                  });
+      Future<DocumentSnapshot> geoLocationSnap = Firestore.instance.collection("geoLocation").document(placeID).get();
+      geoLocationSnap.then((geoLocation) => {
+        Firestore.instance
+            .collection('activities')
+            .document(currentUserModel.id)
+            .collection('followingPlaces')
+            .document(placeID)
+            .setData(geoLocation.data).then(
+                (value) => {
+                      Firestore.instance
+                          .collection('users')
+                          .document(currentUserModel.id)
+                          .updateData(
+                              {'followingPlaces': FieldValue.increment(1)})
+                    })
+      });
     } else {
       Firestore.instance
           .collection('activities')
