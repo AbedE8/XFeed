@@ -232,6 +232,20 @@ class _ProfilePage extends State<ProfilePage>
                                   child: Column(
                                     children: <Widget>[
                                       Row(
+                                        mainAxisAlignment: MainAxisAlignment.center ,
+                                        children: <Widget>[
+                                          Icon(Icons.star, color: Colors.amber),             
+                                          Text(userProfile.cuLevel,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: Colors.amber[300],
+                                                fontSize: 15.0,
+                                                fontWeight: FontWeight.w400,
+                                                fontStyle: FontStyle.normal)
+                                          )
+                                        ]
+                                      ),
+                                      Row(
                                         mainAxisSize: MainAxisSize.max,
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceEvenly,
@@ -246,20 +260,6 @@ class _ProfilePage extends State<ProfilePage>
                                             onTap: (){showFollowingPlaces(profileId, context);},
                                           ),
                                         ],
-                                      ),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.center ,
-                                        children: <Widget>[
-                                          Icon(Icons.star, color: Colors.amber),             
-                                          Text(userProfile.cuLevel,
-                                              textAlign: TextAlign.center,
-                                              style: TextStyle(
-                                                color: Colors.amber[300],
-                                                fontSize: 15.0,
-                                                fontWeight: FontWeight.w400,
-                                                fontStyle: FontStyle.normal)
-                                          )
-                                        ]
                                       ),
                                       Row(
                                           mainAxisAlignment:
