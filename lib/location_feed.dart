@@ -83,12 +83,14 @@ class _LocationFeedPage extends State<LocationFeedPage> {
   }
 
   void followThisPlace() {
-    is_followed = !is_followed;
+    print("function has been called");
+    setState(() {is_followed = !is_followed;});
     updateFollowingPlaces(locationID, is_followed);
-    setState(() {});
+    
   }
 
   Future<bool> isPlaceInFollow(String locationName) async {
+    print("asking for place in follow 0000000000000");
     if (locationID == null) {
       var locationSnap = await Firestore.instance
           .collection('geoLocation')
@@ -103,7 +105,6 @@ class _LocationFeedPage extends State<LocationFeedPage> {
         .document(locationID)
         .get();
     if (snap.data != null) {
-      is_followed = true;
       return true;
     }
     return false;
@@ -111,6 +112,7 @@ class _LocationFeedPage extends State<LocationFeedPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("building new page");
     return FutureBuilder(
       future: isPlaceInFollow(location),
       builder: (context, snapshot) {
@@ -120,7 +122,9 @@ class _LocationFeedPage extends State<LocationFeedPage> {
               padding: const EdgeInsets.only(top: 10.0),
               child: CircularProgressIndicator()));
         }
-        bool place_in_follow = snapshot.data;
+        bool place_in_follow = snapshot.data || is_followed;
+        // is_followed |= place_in_follow;
+        print("lace_in_follow is "+place_in_follow.toString()+" is_followed "+is_followed.toString());
         return Scaffold(
             appBar: new AppBar(
               title: Text(

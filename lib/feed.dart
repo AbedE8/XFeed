@@ -20,7 +20,7 @@ class Feed extends StatefulWidget {
 }
 
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
-  bool _explore = false;
+  bool _explore = true;
   List<ImagePost> feedData;
   bool shouldSendRequest = false;
   List<String> feedPostsID = [];
@@ -60,7 +60,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   @override
   Widget build(BuildContext context) {
     super.build(context); // reloads state when opened again
-    String _title = _explore ? "Xfeed" : "Xplore";
+    String _title = _explore ? "Xplore" : "Xfeed";
     return Scaffold(
       appBar: AppBar(
         title: Container(
