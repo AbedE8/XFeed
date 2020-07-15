@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'chat.dart';
+import 'following_places.dart';
 import 'main.dart';
 import 'image_post.dart';
 import 'dart:async';
@@ -286,7 +287,7 @@ class _ProfilePage extends State<ProfilePage>
     print("about to fetch following places");
     Navigator.of(context)
       .push(MaterialPageRoute<bool>(builder: (BuildContext context) {
-    return;
+    return FollowingPlaces(userId:profileId);
   }));
   }
   int _countFollowings(Map followings) {

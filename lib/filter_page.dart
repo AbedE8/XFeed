@@ -88,6 +88,7 @@ class _Filter extends State<FilterPosts> {
     }
     return null;
   }
+
   _updateUserPreference(UserPreference filterData) async {
     if (filterData == null) {
       return;
@@ -105,9 +106,9 @@ class _Filter extends State<FilterPosts> {
     //need to update currentUserModel because of post preferences change
     updateCurrentUser(currentUserModel, filterData);
   }
+
   @override
   Widget build(BuildContext context) {
-
     return new Scaffold(
         appBar: new AppBar(
           backgroundColor: Colors.white,
@@ -128,13 +129,13 @@ class _Filter extends State<FilterPosts> {
                   color: Colors.blueAccent,
                 ),
                 onPressed: () async {
-                  UserPreference newPref = createUserPref(); 
+                  UserPreference newPref = createUserPref();
                   bool userPrefChanged = !(newPref.isEqual(userPref));
-                  if (userPrefChanged){
+                  if (userPrefChanged) {
                     await _updateUserPreference(newPref);
                   }
-                  print("new post pref " +newPref.toString());
-                  print("old post pref " +userPref.toString());
+                  print("new post pref " + newPref.toString());
+                  print("old post pref " + userPref.toString());
                   Navigator.maybePop(context, userPrefChanged);
                 })
           ],

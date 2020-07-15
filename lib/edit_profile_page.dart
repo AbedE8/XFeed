@@ -21,22 +21,6 @@ class EditProfilePage extends StatelessWidget {
           // currentUserModel = downloadImg;
           currentUserModel.setUserPhoto(downloadImg);
     });
-    // return showDialog(
-    //   context: parentContext,
-    //   builder: (BuildContext context) {
-    //     return AlertDialog(
-    //       title: Text('Change Photo'),
-    //       content: SingleChildScrollView(
-    //         child: ListBody(
-    //           children: <Widget>[
-    //             Text(
-    //                 'Changing your profile photo has not been implemented yet'),
-    //           ],
-    //         ),
-    //       ),
-    //     );
-    //   },
-    // );
   }
 
   applyChanges() {
@@ -132,10 +116,8 @@ class EditProfilePage extends StatelessWidget {
     await auth.signOut();
     await FBlogin_a.logOut();
 
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // await prefs.clear();
+
     currentUserModel = null;
-    // Navigator.pop(context);
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => HomePage()),

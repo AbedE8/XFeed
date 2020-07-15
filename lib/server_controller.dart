@@ -25,8 +25,8 @@ class ServerController{
 
   ServerController._internal();
 
-  getFeed(String userId) async{
-    var url = serverUrl + 'getFeed?uid=' + userId; 
+  getFeed(String userId, String explore_param) async{
+    var url = serverUrl + 'getFeed?uid=' + userId+'&feedMode=' + explore_param; 
     var num_of_posts;
     var listOfPosts; 
     var postsID;

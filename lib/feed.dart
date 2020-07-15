@@ -20,16 +20,18 @@ class Feed extends StatefulWidget {
 }
 
 class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
+  bool _explore = false;
   List<ImagePost> feedData;
   bool shouldSendRequest = false;
   List<String> feedPostsID = [];
   int num_of_return_posts =
       -1; //the initial value because at the beggining we dont now the num of posts
   Coordinates cordinate;
+  bool isSwitched = false;
   @override
   void initState() {
     super.initState();
-    this._getFeed(true);
+    this._getFeed(true, _explore);
     initLocation();
   }
 
@@ -58,12 +60,29 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   @override
   Widget build(BuildContext context) {
     super.build(context); // reloads state when opened again
-
+    String _title = _explore ? "Xfeed" : "Xplore";
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Xfeed',
-            style: const TextStyle(
-                fontFamily: "Billabong", color: Colors.black, fontSize: 35.0)),
+        title: Container(
+          child: Column(
+            children: [
+              GestureDetector(
+                child: Text(_title,
+                    style: const TextStyle(
+                        fontFamily: "Billabong",
+                        color: Colors.black,
+                        fontSize: 35.0)),
+                onTap: () {
+                  setState(() {
+                    _explore = !_explore;
+                    clearUI();
+                    _getFeed(false, _explore);
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         leading: Builder(
@@ -83,7 +102,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
                 if (shouldSendRequest) {
                   clearUI();
                   // await _updateUserPreference();
-                  _getFeed(false);
+                  _getFeed(false, _explore);
                 }
               },
             );
@@ -116,7 +135,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
   Future<Null> _refresh() async {
     print("asked for refresh give him more ");
     clearUI();
-    _getFeed(false);
+    _getFeed(false, _explore);
 
     return;
   }
@@ -130,7 +149,7 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     return postsIds;
   }
 
-  _getFeed(bool fromCache) async {
+  _getFeed(bool fromCache, bool is_explore) async {
     print("Staring getFeed fromCache " + fromCache.toString());
     var res;
     bool feed_from_server = false;
@@ -158,8 +177,8 @@ class _Feed extends State<Feed> with AutomaticKeepAliveClientMixin<Feed> {
     if (!fromCache || feed_from_server) {
       String userId = currentUserModel.id.toString();
       var serverController = ServerController();
-      print("userid is "+userId.toString());
-      res = await serverController.getFeed(userId);
+      print("userid is " + userId.toString());
+      res = await serverController.getFeed(userId, is_explore ? "EXPLORE" : "FAVORITE");
     }
 
     setState(() {
