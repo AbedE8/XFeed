@@ -51,9 +51,8 @@ class _LocationFeedPage extends State<LocationFeedPage> {
     }
     if (follow) {
       Future<DocumentSnapshot> geoLocationSnap = Firestore.instance.collection("geoLocation").document(placeID).get();
-      geoLocationSnap.then((geoLocation) => {
-        /* TODO: delete the data from field d and add to it the rellevant data if needed.*/
-        Firestore.instance
+      await geoLocationSnap.then((geoLocation) => {
+          Firestore.instance
             .collection('activities')
             .document(currentUserModel.id)
             .collection('followingPlaces')
@@ -67,6 +66,16 @@ class _LocationFeedPage extends State<LocationFeedPage> {
                               {'followingPlaces': FieldValue.increment(1)})
                     })
       });
+
+      var a = await Firestore.instance
+        .collection('activities')
+        .document(currentUserModel.id)
+        .collection('followingPlaces')
+        .document(placeID);
+      a.get().then((value) async => {
+        await a.updateData({'d': {'name': value.data['d']['name']}})
+      });
+      
     } else {
       Firestore.instance
           .collection('activities')
